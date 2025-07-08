@@ -1,0 +1,1 @@
+# go-log-pipe-mini
