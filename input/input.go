@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"test_gluent_mini/confmanager"
 	"test_gluent_mini/offset"
 	"time"
 )
+var filePath string // Global variable to store the file path
 var lastOffset int64 = -1 // Variable to store the last offset read from the file
 var lineProcessedCount int64 = 0 // Global variable to count processed lines
 var lastFlushTime time.Time = time.Now() // Variable to track the last flush time
@@ -25,7 +27,17 @@ func init() {
 	}
 }
 
-func TailFile(ctx context.Context, loglineChannel chan string, filePath string, offsetChannel chan int64) {
+func Configure(conf confmanager.Config) {
+	// Set the file path from the configuration
+	filePath = conf.Input.Path // Assuming conf.Path is the file path to be monitored
+	if filePath == "" {
+		fmt.Println("File path is not configured. Please check your configuration.")
+		os.Exit(1)
+	}
+	fmt.Printf("Configured file path: %s\n", filePath)
+}
+
+func TailFile(ctx context.Context, loglineChannel chan string, offsetChannel chan int64) {
 	offset := lastOffset // Use the last offset read from the file
 	for {
 		select {
