@@ -21,13 +21,8 @@ var ctx, cancel = context.WithCancel(context.Background())
 var wg sync.WaitGroup
 
 func main() {
-	fmt.Println("Hello, World!")
+	fmt.Println("Starting the Gluent Mini application...")
 
-	lastOffset, err := offset.ReadOffset()
-	if err != nil {
-		fmt.Printf("Error reading offset: %v\n", err)
-		os.Exit(1)
-	}
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 	go func() {
@@ -47,7 +42,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		input.TailFile(ctx, log_line_channel, "./testlog.log", lastOffset, offset_channel)
+		input.TailFile(ctx, log_line_channel, "./testlog.log", offset_channel)
 		fmt.Println("TailFile goroutine finished.")
 	}()
 
