@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"test_gluent_mini/filter"
 	"test_gluent_mini/generate"
 	"test_gluent_mini/input"
 	"test_gluent_mini/offset"
@@ -14,6 +15,7 @@ import (
 )
 
 var log_line_channel = make(chan string, 1000)
+var filter_line_channel = make(chan string, 1000)
 var offset_channel = make(chan int64, 1000)
 var ctx, cancel = context.WithCancel(context.Background())
 var wg sync.WaitGroup
@@ -38,6 +40,13 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		generate.GenLog(ctx)
+		fmt.Println("GenLog goroutine finished.")
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		input.TailFile(ctx, log_line_channel, "./testlog.log", lastOffset, offset_channel)
 		fmt.Println("TailFile goroutine finished.")
 	}()
@@ -45,14 +54,15 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		generate.GenLog(ctx)
-		fmt.Println("GenLog goroutine finished.")
+		filter.FilterLine(ctx, log_line_channel, filter_line_channel, "ERROR")
+		fmt.Println("FilterLine goroutine finished.")
 	}()
+
 	
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		output.Stdout(ctx, log_line_channel)
+		output.Stdout(ctx, filter_line_channel)
 		fmt.Println("Stdout goroutine finished.")
 	}()
 
