@@ -1,0 +1,12 @@
+INPUT:
+  TYPE: file
+  PATH: ./testlog.log
+
+FILTER:
+  TYPE: grep
+  OPTIONS:
+    IGNORE_CASE: true
+    PATTERN: "ERROR|WARN"
+
+OUTPUT:
+  TYPE: stdout
