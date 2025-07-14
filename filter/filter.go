@@ -5,28 +5,24 @@ import (
 	"strings"
 	"test_gluent_mini/confmanager"
 )
-var filterPattern string // Global variable to hold the filter pattern
-var filterIgnoreCase bool // Global variable to hold the ignore case option
-var filterFunc func(string) bool = _grep // Default filter function
+
+var _mode string = "OR" // Default mode, can be changed based on config
+var _funcList = make([]func(string) bool, 0)
 
 func Configure(conf confmanager.Config) {
-	filterType := conf.Filter.Type
-	switch filterType {
-	case "":
-		filterType = "grep" // Default to grep if no filter type is specified
-		filterPattern = conf.Filter.Options.Patterns // Set the filter pattern from configuration
-		filterIgnoreCase = conf.Filter.Options.Ignore_Case // Set the ignore case option from configuration
-		filterFunc = _grep // Set the filter function to grep
-	case "grep":
-		filterType = "grep" // Set filter type to grep
-		filterPattern = conf.Filter.Options.Patterns // Set the filter pattern from configuration
-		filterIgnoreCase = conf.Filter.Options.Ignore_Case // Set the ignore case option from configuration
-		filterFunc = _grep // Set the filter function to grep
-	default:
-		filterType = "grep" // Default to grep if unsupported filter type is specified
-		filterPattern = conf.Filter.Options.Patterns // Set the filter pattern from configuration
-		filterIgnoreCase = conf.Filter.Options.Ignore_Case // Set the ignore case option from configuration
-		filterFunc = _grep // Set the filter function to grep
+	_mode = strings.ToUpper(conf.Filter.Mode) // Set the mode from the configuration
+	for _, filter := range conf.Filter.Filters {
+		f := filter // Create a local copy of the filter to avoid closure issues
+		switch f.Type {
+		case "grep":
+			// Register the grep function with its options
+			_funcList = append(_funcList, func(line string) bool {
+				return _grep(line, f.Options.IgnoreCase, f.Options.Pattern)
+			})
+		default:
+			// Handle other filter types if needed
+			continue
+		}
 	}
 }
 
@@ -43,19 +39,44 @@ func FilterLine(ctx context.Context, logLineChan chan string, filterLineChan cha
 	}
 }
 
-func _grep(line string) bool {
+func filterFunc(line string) bool {
+	flag := false // Initialize flag to false
+
+	if _mode == "OR" {
+		for _, f := range _funcList {
+			if f(line) {
+				flag = true // Set flag to true if any filter function returns true
+				break
+			}
+		}
+		return flag // Return true if any filter function matched, false otherwise
+	} else if _mode == "AND" {
+		flag = true // Start with true for AND mode
+		for _, f := range _funcList {
+			if !f(line) {
+				flag = false // Set flag to false if any filter function returns false
+				break
+			}
+		}
+		return flag // Return true only if all filter functions matched
+	} else {
+		panic("Unknown filter mode: " + _mode) // Panic if the mode is unknown
+	}
+}
+
+func _grep(line string, filterIgnoreCase bool, filterPattern string) bool {
 	keywords := strings.Split(filterPattern, "|") // Split the pattern by pipe character
-	var flag bool = false // Flag to indicate if the line matches any keyword
+	var flag bool = false                         // Flag to indicate if the line matches any keyword
 	for _, keyword := range keywords {
 		if filterIgnoreCase {
 			if strings.Contains(strings.ToLower(line), strings.ToLower(keyword)) {
 				flag = true // Set flag to true if the line contains the keyword (case insensitive)
-				break // Break out of the loop if a match is found
+				break       // Break out of the loop if a match is found
 			}
 		} else {
 			if strings.Contains(line, keyword) {
 				flag = true // Set flag to true if the line contains the keyword (case sensitive)
-				break // Break out of the loop if a match is found
+				break       // Break out of the loop if a match is found
 			}
 		}
 	}

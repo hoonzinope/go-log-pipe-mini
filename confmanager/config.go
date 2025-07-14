@@ -16,17 +16,19 @@ type Config struct {
 		Path string `yaml:"PATH"`
 	} `yaml:"INPUT"`
 	Filter struct {
-		Type    string `yaml:"TYPE"`
-		Options struct {
-			Patterns string `yaml:"PATTERN"`
-			Ignore_Case bool   `yaml:"IGNORE_CASE"`
-		} `yaml:"OPTIONS"`
+		Mode    string `yaml:"MODE"`
+		Filters []struct {
+			Type    string `yaml:"TYPE"`
+			Options struct {
+				IgnoreCase bool   `yaml:"IGNORE_CASE"`
+				Pattern    string `yaml:"PATTERN"`
+			} `yaml:"OPTIONS"`
+		} `yaml:"FILTERS"`
 	} `yaml:"FILTER"`
 	Output struct {
 		Type string `yaml:"TYPE"`
 	} `yaml:"OUTPUT"`
-} 
-
+}
 
 func ReadConfig(filepath string) (Config, error) {
 	yamlFile, err := os.ReadFile(filepath)
