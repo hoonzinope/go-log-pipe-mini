@@ -3,10 +3,16 @@ INPUT:
   PATH: ./testlog.log
 
 FILTER:
-  TYPE: grep
-  OPTIONS:
-    IGNORE_CASE: true
-    PATTERN: "ERROR|WARN"
+  MODE: OR
+  FILTERS:
+    - TYPE: grep
+      OPTIONS:
+        IGNORE_CASE: true
+        PATTERN: "ERROR"
+    - TYPE: grep
+      OPTIONS:
+        IGNORE_CASE: true
+        PATTERN: "WARN"
 
 OUTPUT:
   TYPE: stdout
