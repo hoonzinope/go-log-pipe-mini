@@ -10,7 +10,7 @@ var _mode string = "OR" // Default mode, can be changed based on config
 var _funcList = make([]func(string) bool, 0)
 
 func Configure(conf confmanager.Config) {
-	_mode = conf.Filter.Mode // Set the mode from the configuration
+	_mode = strings.ToUpper(conf.Filter.Mode) // Set the mode from the configuration
 	for _, filter := range conf.Filter.Filters {
 		f := filter // Create a local copy of the filter to avoid closure issues
 		switch f.Type {
@@ -40,8 +40,7 @@ func FilterLine(ctx context.Context, logLineChan chan string, filterLineChan cha
 }
 
 func filterFunc(line string) bool {
-	flag := false                  // Initialize flag to false
-	_mode = strings.ToUpper(_mode) // Ensure mode is in uppercase for consistency
+	flag := false // Initialize flag to false
 
 	if _mode == "OR" {
 		for _, f := range _funcList {
@@ -60,9 +59,9 @@ func filterFunc(line string) bool {
 			}
 		}
 		return flag // Return true only if all filter functions matched
+	} else {
+		panic("Unknown filter mode: " + _mode) // Panic if the mode is unknown
 	}
-
-	return flag // Return true if any filter function matched, false otherwise
 }
 
 func _grep(line string, filterIgnoreCase bool, filterPattern string) bool {
