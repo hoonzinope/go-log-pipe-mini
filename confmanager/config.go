@@ -12,6 +12,7 @@ import (
 
 type Config struct {
 	Input struct {
+		Name string `yaml:"NAME"`
 		Type string `yaml:"TYPE"`
 		Path string `yaml:"PATH"`
 	} `yaml:"INPUT"`

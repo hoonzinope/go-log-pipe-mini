@@ -14,9 +14,10 @@ import (
 	"test_gluent_mini/offset"
 	"test_gluent_mini/output"
 )
+
 var log_line_channel = make(chan string, 1000)
 var filter_line_channel = make(chan string, 1000)
-var offset_channel = make(chan int64, 1000)
+var offset_channel = make(chan offset.OffsetData, 1000)
 var ctx, cancel = context.WithCancel(context.Background())
 var wg sync.WaitGroup
 
@@ -42,16 +43,16 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		generate.GenLog(ctx)
-		fmt.Println("GenLog goroutine finished.")
+		generate.GenLogWithFolder(ctx)
+		fmt.Println("GenLog goroutine on.")
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		input.Configure(config)
-		input.TailFile(ctx, log_line_channel, offset_channel)
-		fmt.Println("TailFile goroutine finished.")
+		input.Configure(ctx, config, log_line_channel, offset_channel)
+		input.ManagingNode()
+		fmt.Println("TailFile goroutine on.")
 	}()
 
 	wg.Add(1)
@@ -59,23 +60,22 @@ func main() {
 		defer wg.Done()
 		filter.Configure(config)
 		filter.FilterLine(ctx, log_line_channel, filter_line_channel)
-		fmt.Println("filter goroutine finished.")
+		fmt.Println("filter goroutine on.")
 	}()
 
-	
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		output.Configure(config)
 		output.Out(ctx, filter_line_channel)
-		fmt.Println("output goroutine finished.")
+		fmt.Println("output goroutine on.")
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		offset.WriterOffset(ctx, offset_channel)
-		fmt.Println("WriterOffset goroutine finished.")
+		offset.Write(ctx, offset_channel)
+		fmt.Println("WriterOffset goroutine on.")
 	}()
 
 	wg.Wait()

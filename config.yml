@@ -1,6 +1,7 @@
 INPUT:
+  NAME: testlog
   TYPE: file
-  PATH: ./testlog.log
+  PATH: ./logs/
 
 FILTER:
   MODE: OR
