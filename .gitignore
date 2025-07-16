@@ -1,5 +1,4 @@
 offset.state
 offset.tmp
 testlog.log
-./logs
-./logs/*
+logs/*
