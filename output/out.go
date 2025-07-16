@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"test_gluent_mini/confmanager"
 )
+
 var outputFunc func(string) = _println // Default output function
 func Configure(conf confmanager.Config) {
 	outputType := conf.Output.Type
@@ -33,5 +34,5 @@ func Out(ctx context.Context, filterLineChannel chan string) {
 }
 
 func _println(logLine string) {
-	fmt.Print(logLine) // Print to standard output
+	fmt.Println(logLine) // Print to standard output
 }

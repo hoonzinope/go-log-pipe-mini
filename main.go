@@ -14,9 +14,10 @@ import (
 	"test_gluent_mini/offset"
 	"test_gluent_mini/output"
 )
+
 var log_line_channel = make(chan string, 1000)
 var filter_line_channel = make(chan string, 1000)
-var offset_channel = make(chan int64, 1000)
+var offset_channel = make(chan offset.OffsetData, 1000)
 var ctx, cancel = context.WithCancel(context.Background())
 var wg sync.WaitGroup
 
@@ -42,15 +43,15 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		generate.GenLog(ctx)
+		generate.GenLogWithFolder(ctx)
 		fmt.Println("GenLog goroutine finished.")
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		input.Configure(config)
-		input.TailFile(ctx, log_line_channel, offset_channel)
+		input.Configure(ctx, config, log_line_channel, offset_channel)
+		input.ManagingNode()
 		fmt.Println("TailFile goroutine finished.")
 	}()
 
@@ -62,7 +63,6 @@ func main() {
 		fmt.Println("filter goroutine finished.")
 	}()
 
-	
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -74,7 +74,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		offset.WriterOffset(ctx, offset_channel)
+		offset.Write(ctx, offset_channel)
 		fmt.Println("WriterOffset goroutine finished.")
 	}()
 

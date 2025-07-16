@@ -8,8 +8,16 @@ import (
 	"time"
 )
 
-func GenLog(ctx context.Context) {
-	var log_file_path string = "./testlog.log"
+func GenLogWithFolder(ctx context.Context) {
+	var log_folder = "./logs"
+	if _, err := os.Stat(log_folder); os.IsNotExist(err) {
+		if err := os.Mkdir(log_folder, 0755); err != nil {
+			fmt.Printf("Error creating log folder: %v\n", err)
+			return
+		}
+	}
+	var log_file_path string = fmt.Sprintf("%s/testlog.log", log_folder)
+	var log_file_path1 string = fmt.Sprintf("%s/testlog1.log", log_folder)
 	for {
 		select {
 		case <-ctx.Done():
@@ -17,6 +25,7 @@ func GenLog(ctx context.Context) {
 			return
 		default:
 			_generate_log(log_file_path)
+			_generate_log(log_file_path1)
 			time.Sleep(1 * time.Second) // Sleep for 1 second before generating the next
 		}
 	}
