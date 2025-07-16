@@ -1,7 +1,7 @@
 INPUT:
   NAME: testlog
   TYPE: file
-  PATH: ./logs
+  PATH: ./logs/
 
 FILTER:
   MODE: OR

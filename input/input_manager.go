@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"test_gluent_mini/confmanager"
 	"test_gluent_mini/offset"
 )
@@ -23,12 +24,12 @@ func init() {
 	} else {
 		for file, off := range offsets {
 			offsetMap[file] = off
-			fmt.Printf("Last offset for %s: %d\n", file, off)
 		}
 	}
 }
 
 var inputFilePath string
+var filePattern string
 var name string
 var cancel_ctx context.Context
 var logLineChannel chan string
@@ -44,6 +45,14 @@ func Configure(ctx context.Context,
 		fmt.Println("File path is not configured. Please check your configuration.")
 		os.Exit(1)
 	}
+	filePattern = inputFilePath
+	if !strings.ContainsAny(filePattern, "*?") {
+		stat, err := os.Stat(filePattern)
+		if err == nil && stat.IsDir() {
+			filePattern = filepath.Join(filePattern, "*")
+		}
+	}
+
 	cancel_ctx = ctx
 	logLineChannel = logLineChan
 	offsetChannel = offsetChan
@@ -52,15 +61,17 @@ func Configure(ctx context.Context,
 var cancelMap = make(map[string]context.CancelFunc)
 
 func ManagingNode() {
-	if stat, _ := os.Stat(inputFilePath); stat.IsDir() {
-		inputFilePath = filepath.Join(inputFilePath, "*")
-	}
-	files, err := filepath.Glob(inputFilePath)
+	files, err := filepath.Glob(filePattern)
 	if err != nil {
-		panic(fmt.Sprintf("Error reading files in path %s: %v", inputFilePath, err))
+		panic(fmt.Sprintf("Error reading files in path %s: %v", filePattern, err))
 	}
+
 	// add tail function of input files <- child process
 	for _, file := range files {
+		stat, err := os.Stat(file)
+		if err != nil || !stat.Mode().IsRegular() {
+			continue // 디렉터리, 링크 등은 건너뛰기
+		}
 		if _, exists := offsetMap[file]; !exists {
 			offsetMap[file] = 0 // Initialize offset for new files
 		}
@@ -141,9 +152,9 @@ func _watch(ctx context.Context, files []string) {
 }
 
 func _watchFiles(files []string) (newFiles []string, err error) {
-	newFiles, err = filepath.Glob(inputFilePath)
+	newFiles, err = filepath.Glob(filePattern)
 	if err != nil {
-		fmt.Printf("Error watching files in path %s: %v\n", inputFilePath, err)
+		fmt.Printf("Error watching files in path %s: %v\n", filePattern, err)
 		return nil, err
 	}
 	for _, file := range newFiles {

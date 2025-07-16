@@ -7,8 +7,9 @@ import (
 	"time"
 )
 
-var offsetFileTemp string = "./offset.tmp"
-var offsetFilePath string = "./offset.state"
+const offsetFileTemp string = "./offset.tmp"
+const offsetFilePath string = "./offset.state"
+
 var offsetMap map[string]int64 = nil
 var lastFlushTime time.Time = time.Now()
 
@@ -30,7 +31,6 @@ func GetOffsetMap() (map[string]int64, error) {
 
 func _read() (map[string]int64, error) {
 	offsets := make(map[string]int64)
-	offsetFilePath := "./offsets.state"
 	file, err := os.Open(offsetFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -70,7 +70,11 @@ func Write(ctx context.Context, offsetChan chan OffsetData) {
 						fmt.Printf("Error writing offset for %s: %v\n", offsetData.FileName, err)
 						continue // Skip to the next iteration if there's an error
 					}
-					os.Rename(offsetFileTemp, offsetFilePath) // Rename the temp file to the final file
+					if err := os.Rename(offsetFileTemp, offsetFilePath); err == nil {
+						lastFlushTime = time.Now()
+					} else {
+						fmt.Printf("Error renaming temp offset file: %v\n", err)
+					}
 				}
 			}
 		}

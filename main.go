@@ -44,7 +44,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		generate.GenLogWithFolder(ctx)
-		fmt.Println("GenLog goroutine finished.")
+		fmt.Println("GenLog goroutine on.")
 	}()
 
 	wg.Add(1)
@@ -52,7 +52,7 @@ func main() {
 		defer wg.Done()
 		input.Configure(ctx, config, log_line_channel, offset_channel)
 		input.ManagingNode()
-		fmt.Println("TailFile goroutine finished.")
+		fmt.Println("TailFile goroutine on.")
 	}()
 
 	wg.Add(1)
@@ -60,7 +60,7 @@ func main() {
 		defer wg.Done()
 		filter.Configure(config)
 		filter.FilterLine(ctx, log_line_channel, filter_line_channel)
-		fmt.Println("filter goroutine finished.")
+		fmt.Println("filter goroutine on.")
 	}()
 
 	wg.Add(1)
@@ -68,14 +68,14 @@ func main() {
 		defer wg.Done()
 		output.Configure(config)
 		output.Out(ctx, filter_line_channel)
-		fmt.Println("output goroutine finished.")
+		fmt.Println("output goroutine on.")
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		offset.Write(ctx, offset_channel)
-		fmt.Println("WriterOffset goroutine finished.")
+		fmt.Println("WriterOffset goroutine on.")
 	}()
 
 	wg.Wait()
