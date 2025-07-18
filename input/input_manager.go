@@ -10,6 +10,8 @@ import (
 	"slices"
 	"strings"
 	"test_gluent_mini/confmanager"
+	"test_gluent_mini/data"
+	"test_gluent_mini/input/parse"
 	"test_gluent_mini/offset"
 )
 
@@ -30,32 +32,38 @@ func init() {
 
 var inputFilePath string
 var filePattern string
-var name string
+var tag string
+var parser string
+
 var cancel_ctx context.Context
-var logLineChannel chan string
-var offsetChannel chan offset.OffsetData
+var logLineChannel chan data.InputData
+var offsetChannel chan data.InputData
 
 func Configure(ctx context.Context,
 	conf confmanager.Config,
-	logLineChan chan string,
-	offsetChan chan offset.OffsetData) {
+	logLineChan chan data.InputData,
+	offsetChan chan data.InputData) {
 	inputFilePath = conf.Input.Path
-	name = conf.Input.Name
+	tag = conf.Input.Tag
+	parser = conf.Input.Parser
 	if inputFilePath == "" {
 		fmt.Println("File path is not configured. Please check your configuration.")
 		os.Exit(1)
 	}
-	filePattern = inputFilePath
-	if !strings.ContainsAny(filePattern, "*?") {
-		stat, err := os.Stat(filePattern)
-		if err == nil && stat.IsDir() {
-			filePattern = filepath.Join(filePattern, "*")
-		}
-	}
+	filePattern = _dirToFilePattern(inputFilePath)
 
 	cancel_ctx = ctx
 	logLineChannel = logLineChan
 	offsetChannel = offsetChan
+}
+
+func _dirToFilePattern(dir string) string {
+	if stat, err := os.Stat(dir); err == nil && stat.IsDir() {
+		if !strings.Contains(dir, "*?") {
+			return filepath.Join(dir, "*") // Assuming log files have .log extension
+		}
+	}
+	return dir
 }
 
 var cancelMap = make(map[string]context.CancelFunc)
@@ -90,33 +98,35 @@ func _tail(fileCtx context.Context, filePath string, offsetN int64) {
 			fmt.Println("Context cancelled, stopping input reading.")
 			return
 		default:
-			lastLine, newOffset := _tailFile(filePath, offsetN)
-			lastLine = "[" + name + "] " + lastLine // Add name prefix to the log line
-			if lastLine != "" {
-				logLineChannel <- lastLine
-				offsetData := offset.OffsetData{
-					FileName: filePath,
-					Offset:   newOffset,
-				}
-				offsetChannel <- offsetData
-				offsetN = newOffset // Update the offset for the next iteration
+			lastInputData := _tailFile(filePath, offsetN)
+			if lastInputData.Raw != "" {
+				logLineChannel <- lastInputData
+				offsetChannel <- lastInputData
+				offsetN = lastInputData.Offset // Update the offset for the next iteration
 			}
 		}
 	}
 }
 
-func _tailFile(filePath string, offset int64) (string, int64) {
+func _tailFile(filePath string, offset int64) data.InputData {
+	inputData := data.InputData{
+		FileName: filePath,
+		Tag:      tag,
+		Raw:      "",
+		Json:     nil,
+		Offset:   offset,
+	}
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Printf("Error opening file %s: %v\n", filePath, err)
-		return "", offset
+		return inputData
 	}
 	defer file.Close()
 
 	// Move to the last known offset
 	if _, err := file.Seek(offset, io.SeekStart); err != nil {
 		fmt.Printf("Error seeking to offset %d in file %s: %v\n", offset, filePath, err)
-		return "", offset
+		return inputData
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -124,14 +134,19 @@ func _tailFile(filePath string, offset int64) (string, int64) {
 	for scanner.Scan() {
 		lastLine = scanner.Text()
 	}
-
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading file %s: %v\n", filePath, err)
-		return "", offset
+		return inputData
 	}
 
 	newOffset, _ := file.Seek(0, io.SeekCurrent) // Get the new offset after reading
-	return lastLine, newOffset
+
+	inputData.Raw = lastLine
+	inputData.Offset = newOffset
+	if parser == "json" {
+		inputData = parseJSON(lastLine, inputData)
+	}
+	return inputData
 }
 
 func _watch(ctx context.Context, files []string) {
@@ -182,4 +197,17 @@ func _watchFiles(files []string) (newFiles []string, err error) {
 	}
 
 	return newFiles, nil
+}
+
+func parseJSON(inputLine string, inputDataStruct data.InputData) data.InputData {
+	if inputLine == "" {
+		return inputDataStruct // Return empty struct if input line is empty
+	}
+	jsonData, err := parse.ParseJSON(inputLine)
+	if err != nil {
+		fmt.Printf("Error parsing JSON: %v\n", err)
+		return inputDataStruct
+	}
+	inputDataStruct.Json = jsonData
+	return inputDataStruct
 }

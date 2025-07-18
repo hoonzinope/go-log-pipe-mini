@@ -4,10 +4,11 @@ import (
 	"context"
 	"strings"
 	"test_gluent_mini/confmanager"
+	"test_gluent_mini/data"
 )
 
 var _mode string = "OR" // Default mode, can be changed based on config
-var _funcList = make([]func(string) bool, 0)
+var _funcList = make([]func(data.InputData) bool, 0)
 
 func Configure(conf confmanager.Config) {
 	_mode = strings.ToUpper(conf.Filter.Mode) // Set the mode from the configuration
@@ -16,8 +17,12 @@ func Configure(conf confmanager.Config) {
 		switch f.Type {
 		case "grep":
 			// Register the grep function with its options
-			_funcList = append(_funcList, func(line string) bool {
-				return _grep(line, f.Options.IgnoreCase, f.Options.Pattern)
+			_funcList = append(_funcList, func(line data.InputData) bool {
+				return _grep(line.Raw, f.Options.IgnoreCase, f.Options.Pattern)
+			})
+		case "json_grep":
+			_funcList = append(_funcList, func(line data.InputData) bool {
+				return _json_grep(line.Json, f.Options.Field, f.Options.IgnoreCase, f.Options.Pattern)
 			})
 		default:
 			// Handle other filter types if needed
@@ -26,25 +31,25 @@ func Configure(conf confmanager.Config) {
 	}
 }
 
-func FilterLine(ctx context.Context, logLineChan chan string, filterLineChan chan string) {
+func FilterLine(ctx context.Context, logLineChan chan data.InputData, filterLineChan chan string) {
 	for {
 		select {
 		case <-ctx.Done():
 			return // Exit if the context is cancelled
-		case line := <-logLineChan:
-			if filterFunc(line) {
-				filterLineChan <- line
+		case lineInputData := <-logLineChan:
+			if filterFunc(lineInputData) {
+				filterLineChan <- lineInputData.Raw
 			}
 		}
 	}
 }
 
-func filterFunc(line string) bool {
+func filterFunc(lineData data.InputData) bool {
 	flag := false // Initialize flag to false
 
 	if _mode == "OR" {
 		for _, f := range _funcList {
-			if f(line) {
+			if f(lineData) {
 				flag = true // Set flag to true if any filter function returns true
 				break
 			}
@@ -53,7 +58,7 @@ func filterFunc(line string) bool {
 	} else if _mode == "AND" {
 		flag = true // Start with true for AND mode
 		for _, f := range _funcList {
-			if !f(line) {
+			if !f(lineData) {
 				flag = false // Set flag to false if any filter function returns false
 				break
 			}
@@ -66,7 +71,7 @@ func filterFunc(line string) bool {
 
 func _grep(line string, filterIgnoreCase bool, filterPattern string) bool {
 	keywords := strings.Split(filterPattern, "|") // Split the pattern by pipe character
-	var flag bool = false                         // Flag to indicate if the line matches any keyword
+	flag := false                                 // Flag to indicate if the line matches any keyword
 	for _, keyword := range keywords {
 		if filterIgnoreCase {
 			if strings.Contains(strings.ToLower(line), strings.ToLower(keyword)) {
@@ -81,4 +86,31 @@ func _grep(line string, filterIgnoreCase bool, filterPattern string) bool {
 		}
 	}
 	return flag // Return true if the line matches any keyword, false otherwise
+}
+
+func _json_grep(jsonLine map[string]interface{}, field string,
+	filterIgnoreCase bool, filterPattern string) bool {
+	if jsonLine == nil || field == "" || filterPattern == "" {
+		return false
+	}
+	flag := false                                 // Flag to indicate if the line matches the filter
+	keywords := strings.Split(filterPattern, "|") // Split the pattern by pipe character
+	for _, keyword := range keywords {
+		if value, exists := jsonLine[field]; exists {
+			if strValue, ok := value.(string); ok {
+				if filterIgnoreCase {
+					if strings.Contains(strings.ToLower(strValue), strings.ToLower(keyword)) {
+						flag = true // Set flag to true if the field contains the pattern (case insensitive)
+						break
+					}
+				} else {
+					if strings.Contains(strValue, keyword) {
+						flag = true // Set flag to true if the field contains the pattern (case sensitive)
+						break
+					}
+				}
+			}
+		}
+	}
+	return flag // Return true if the field matches the pattern, false otherwise
 }

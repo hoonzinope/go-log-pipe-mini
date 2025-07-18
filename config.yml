@@ -1,19 +1,17 @@
 INPUT:
-  NAME: testlog
+  TAG: testlog
   TYPE: file
-  PATH: ./logs/
+  PATH: ./json_logs/
+  PARSER: json
 
 FILTER:
   MODE: OR
   FILTERS:
-    - TYPE: grep
+    - TYPE: json_grep
       OPTIONS:
+        FIELD: "level"
         IGNORE_CASE: true
-        PATTERN: "ERROR"
-    - TYPE: grep
-      OPTIONS:
-        IGNORE_CASE: true
-        PATTERN: "WARN"
+        PATTERN: "error"
 
 OUTPUT:
   TYPE: stdout

@@ -12,9 +12,10 @@ import (
 
 type Config struct {
 	Input struct {
-		Name string `yaml:"NAME"`
-		Type string `yaml:"TYPE"`
-		Path string `yaml:"PATH"`
+		Tag    string `yaml:"TAG"`
+		Type   string `yaml:"TYPE"`
+		Path   string `yaml:"PATH"`
+		Parser string `yaml:"PARSER"`
 	} `yaml:"INPUT"`
 	Filter struct {
 		Mode    string `yaml:"MODE"`
@@ -23,6 +24,7 @@ type Config struct {
 			Options struct {
 				IgnoreCase bool   `yaml:"IGNORE_CASE"`
 				Pattern    string `yaml:"PATTERN"`
+				Field      string `yaml:"FIELD"` // For json_grep filter
 			} `yaml:"OPTIONS"`
 		} `yaml:"FILTERS"`
 	} `yaml:"FILTER"`
