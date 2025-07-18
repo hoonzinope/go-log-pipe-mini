@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"test_gluent_mini/data"
 	"time"
 )
 
@@ -55,7 +56,7 @@ func _read() (map[string]int64, error) {
 	return offsets, nil
 }
 
-func Write(ctx context.Context, offsetChan chan OffsetData) {
+func Write(ctx context.Context, offsetChan chan data.InputData) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -81,7 +82,7 @@ func Write(ctx context.Context, offsetChan chan OffsetData) {
 	}
 }
 
-func _write_offset(offsetData OffsetData) error {
+func _write_offset(offsetData data.InputData) error {
 	// Open the file in append mode
 	file, err := os.OpenFile(offsetFileTemp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {

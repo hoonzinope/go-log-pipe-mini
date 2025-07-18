@@ -2,3 +2,4 @@ offset.state
 offset.tmp
 testlog.log
 logs/*
+json_logs/*
