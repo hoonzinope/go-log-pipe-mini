@@ -58,10 +58,12 @@ func Configure(ctx context.Context,
 }
 
 func _dirToFilePattern(dir string) string {
-	if strings.HasSuffix(dir, "/") || strings.HasSuffix(dir, "\\") {
-		return dir + "*"
+	if stat, err := os.Stat(dir); err == nil && stat.IsDir() {
+		if !strings.Contains(dir, "*?") {
+			return filepath.Join(dir, "*") // Assuming log files have .log extension
+		}
 	}
-	return dir + "/*"
+	return dir
 }
 
 var cancelMap = make(map[string]context.CancelFunc)
@@ -107,7 +109,7 @@ func _tail(fileCtx context.Context, filePath string, offsetN int64) {
 }
 
 func _tailFile(filePath string, offset int64) data.InputData {
-	var inputData data.InputData = data.InputData{
+	inputData := data.InputData{
 		FileName: filePath,
 		Tag:      tag,
 		Raw:      "",

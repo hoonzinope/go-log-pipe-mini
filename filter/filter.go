@@ -71,7 +71,7 @@ func filterFunc(lineData data.InputData) bool {
 
 func _grep(line string, filterIgnoreCase bool, filterPattern string) bool {
 	keywords := strings.Split(filterPattern, "|") // Split the pattern by pipe character
-	var flag bool = false                         // Flag to indicate if the line matches any keyword
+	flag := false                                 // Flag to indicate if the line matches any keyword
 	for _, keyword := range keywords {
 		if filterIgnoreCase {
 			if strings.Contains(strings.ToLower(line), strings.ToLower(keyword)) {
@@ -93,7 +93,7 @@ func _json_grep(jsonLine map[string]interface{}, field string,
 	if jsonLine == nil || field == "" || filterPattern == "" {
 		return false
 	}
-	var flag bool = false                         // Flag to indicate if the line matches the filter
+	flag := false                                 // Flag to indicate if the line matches the filter
 	keywords := strings.Split(filterPattern, "|") // Split the pattern by pipe character
 	for _, keyword := range keywords {
 		if value, exists := jsonLine[field]; exists {

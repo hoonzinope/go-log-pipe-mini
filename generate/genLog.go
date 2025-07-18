@@ -94,11 +94,17 @@ func GenerateJsonLog(ctx context.Context) {
 func _generate_json_log(filePath string) {
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		os.Create(filePath)
+		file, err = os.Create(filePath)
+		if err != nil {
+			fmt.Printf("Error creating file %s: %v\n", filePath, err)
+			return
+		}
 	}
 	defer file.Close()
 
-	file.Write([]byte(_randomJsonLogLine()))
+	if _, err := file.Write([]byte(_randomJsonLogLine())); err != nil {
+		fmt.Printf("Error writing to file %s: %v\n", filePath, err)
+	}
 }
 
 func _randomLogLevelField() string {
