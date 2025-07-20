@@ -19,6 +19,11 @@ func GenLogWithFolder(ctx context.Context) {
 	}
 	var log_file_path string = fmt.Sprintf("%s/testlog.log", log_folder)
 	var log_file_path1 string = fmt.Sprintf("%s/testlog1.log", log_folder)
+	go _runLogGeneration(ctx, log_file_path)
+	go _runLogGeneration(ctx, log_file_path1)
+}
+
+func _runLogGeneration(ctx context.Context, log_file_path string) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -26,7 +31,6 @@ func GenLogWithFolder(ctx context.Context) {
 			return
 		default:
 			_generate_log(log_file_path)
-			_generate_log(log_file_path1)
 			time.Sleep(1 * time.Second) // Sleep for 1 second before generating the next
 		}
 	}
@@ -79,6 +83,10 @@ func GenerateJsonLog(ctx context.Context) {
 		}
 	}
 	var json_log_file_path string = fmt.Sprintf("%s/testlog.json.log", json_log_folder)
+	go _runJSONLogGeneration(ctx, json_log_file_path)
+}
+
+func _runJSONLogGeneration(ctx context.Context, json_log_file_path string) {
 	for {
 		select {
 		case <-ctx.Done():
