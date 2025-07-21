@@ -8,12 +8,12 @@ import (
 	"slices"
 	"strings"
 	"test_gluent_mini/confmanager"
-	"test_gluent_mini/data"
+	"test_gluent_mini/shared"
 )
 
 func ManagingFileNode(
 	inputConfig confmanager.InputConfig,
-	inputChan chan data.InputData) {
+	inputChan chan shared.InputData) {
 
 	conf := inputConfig
 
@@ -31,16 +31,16 @@ func ManagingFileNode(
 		if !_isFile(file) {
 			continue
 		}
-		m.Lock()
-		if _, exists := offsetMap[file]; !exists {
-			offsetMap[file] = 0 // Initialize offset if not present
+		shared.M.Lock()
+		if _, exists := shared.OffsetMap[file]; !exists {
+			shared.OffsetMap[file] = 0 // Initialize offset if not present
 		}
-		m.Unlock()
-		fileCtx, cancel := context.WithCancel(cancelCtx)
-		cancelMap[file] = cancel
+		shared.M.Unlock()
+		fileCtx, cancel := context.WithCancel(shared.Ctx)
+		shared.CancelMap[file] = cancel
 		// Start a goroutine to tail the file
 		go TailFile(fileCtx, inputChan,
-			_name, file, _parser, offsetMap[file])
+			_name, file, _parser, shared.OffsetMap[file])
 	}
 	//go _watch(cancelCtx, filePatten,inputChan, _name, _parser)
 }
@@ -63,7 +63,7 @@ func _isFile(path string) bool {
 }
 
 func _watch(ctx context.Context,
-	filepattern string, inputChan chan data.InputData,
+	filepattern string, inputChan chan shared.InputData,
 	name string, parser string) {
 	for {
 		select {
@@ -82,11 +82,11 @@ func _watch(ctx context.Context,
 }
 
 func _watchFiles(filepattern string,
-	inputChan chan data.InputData,
+	inputChan chan shared.InputData,
 	name string, parser string) ([]string, error) {
 
-	m.Lock()
-	defer m.Unlock()
+	shared.M.Lock()
+	defer shared.M.Unlock()
 
 	newFiles, err := filepath.Glob(filepattern)
 	if err != nil {
@@ -94,31 +94,30 @@ func _watchFiles(filepattern string,
 	}
 	// new file go routine
 	for _, file := range newFiles {
-		if _, exists := offsetMap[file]; !exists {
-			offsetMap[file] = 0 // Initialize offset for new files
-			fileCtx, cancel := context.WithCancel(cancelCtx)
-			cancelMap[file] = cancel // Store the cancel function for later use
-			//go _tail(fileCtx, file, offsetMap[file])
+		if _, exists := shared.OffsetMap[file]; !exists {
+			shared.OffsetMap[file] = 0 // Initialize offset for new files
+			fileCtx, cancel := context.WithCancel(shared.Ctx)
+			shared.CancelMap[file] = cancel // Store the cancel function for later use
 			go TailFile(fileCtx,
 				inputChan,
-				name, file, parser, offsetMap[file])
+				name, file, parser, shared.OffsetMap[file])
 		}
 	}
 
 	// delete not existing files
 	var toDeleteFiles []string
-	for file := range offsetMap {
+	for file := range shared.OffsetMap {
 		if !slices.Contains(newFiles, file) {
 			toDeleteFiles = append(toDeleteFiles, file)
 		}
 	}
 	if len(toDeleteFiles) != 0 {
 		for _, file := range toDeleteFiles {
-			cancel, exists := cancelMap[file]
+			cancel, exists := shared.CancelMap[file]
 			if exists {
-				cancel()                // Cancel the context for the file
-				delete(cancelMap, file) // Remove from cancel map
-				delete(offsetMap, file) // Remove from offset map
+				cancel()                       // Cancel the context for the file
+				delete(shared.CancelMap, file) // Remove from cancel map
+				delete(shared.OffsetMap, file) // Remove from offset map
 			}
 		}
 	}
