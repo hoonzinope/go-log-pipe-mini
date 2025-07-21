@@ -94,10 +94,7 @@ func _watchFiles(filepattern string,
 	}
 	// new file go routine
 	for _, file := range newFiles {
-		m.Lock()
-		_, exists := offsetMap[file]
-		m.Unlock()
-		if !exists {
+		if _, exists := offsetMap[file]; !exists {
 			offsetMap[file] = 0 // Initialize offset for new files
 			fileCtx, cancel := context.WithCancel(cancelCtx)
 			cancelMap[file] = cancel // Store the cancel function for later use
@@ -110,13 +107,11 @@ func _watchFiles(filepattern string,
 
 	// delete not existing files
 	var toDeleteFiles []string
-	m.Lock()
 	for file := range offsetMap {
 		if !slices.Contains(newFiles, file) {
 			toDeleteFiles = append(toDeleteFiles, file)
 		}
 	}
-	m.Unlock()
 	if len(toDeleteFiles) != 0 {
 		for _, file := range toDeleteFiles {
 			cancel, exists := cancelMap[file]
