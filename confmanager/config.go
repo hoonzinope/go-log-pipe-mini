@@ -7,30 +7,36 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// read configuration from a config.yml file
-// and return struct with the configuration
-
 type Config struct {
-	Input struct {
-		Tag    string `yaml:"TAG"`
-		Type   string `yaml:"TYPE"`
-		Path   string `yaml:"PATH"`
-		Parser string `yaml:"PARSER"`
-	} `yaml:"INPUT"`
-	Filter struct {
-		Mode    string `yaml:"MODE"`
-		Filters []struct {
-			Type    string `yaml:"TYPE"`
-			Options struct {
-				IgnoreCase bool   `yaml:"IGNORE_CASE"`
-				Pattern    string `yaml:"PATTERN"`
-				Field      string `yaml:"FIELD"` // For json_grep filter
-			} `yaml:"OPTIONS"`
-		} `yaml:"FILTERS"`
-	} `yaml:"FILTER"`
-	Output struct {
-		Type string `yaml:"TYPE"`
-	} `yaml:"OUTPUT"`
+	Inputs  []InputConfig          `yaml:"INPUTS"`
+	Filters map[string]FilterGroup `yaml:"FILTERS"`
+	Outputs []OutputConfig         `yaml:"OUTPUTS"`
+}
+
+type InputConfig struct {
+	Name   string `yaml:"NAME"`
+	Type   string `yaml:"TYPE"`
+	Path   string `yaml:"PATH"`
+	Parser string `yaml:"PARSER"`
+}
+
+type FilterGroup struct {
+	Mode  string       `yaml:"MODE"`
+	Rules []FilterRule `yaml:"RULES"`
+}
+
+type FilterRule struct {
+	Type    string `yaml:"TYPE"`
+	Options struct {
+		IgnoreCase bool   `yaml:"IGNORE_CASE"`
+		Pattern    string `yaml:"PATTERN"`
+		Field      string `yaml:"FIELD"`
+	} `yaml:"OPTIONS"`
+}
+
+type OutputConfig struct {
+	Type    string   `yaml:"TYPE"`
+	Targets []string `yaml:"TARGETS"`
 }
 
 func ReadConfig(filepath string) (Config, error) {

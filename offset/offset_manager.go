@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"test_gluent_mini/data"
 	"time"
 )
+
+var m sync.Mutex
 
 const offsetFileTemp string = "./offset.tmp"
 const offsetFilePath string = "./offset.state"
@@ -64,7 +67,9 @@ func Write(ctx context.Context, offsetChan chan data.InputData) {
 			return
 		case offsetData := <-offsetChan:
 			if offsetData.Offset != 0 {
+				m.Lock()
 				offsetMap[offsetData.FileName] = offsetData.Offset // Update the offset map
+				m.Unlock()
 				if time.Since(lastFlushTime) > 10*time.Second {
 					err := _write_offset(offsetData)
 					if err != nil {
@@ -83,6 +88,8 @@ func Write(ctx context.Context, offsetChan chan data.InputData) {
 }
 
 func _write_offset(offsetData data.InputData) error {
+	m.Lock()
+	defer m.Unlock()
 	// Open the file in append mode
 	file, err := os.OpenFile(offsetFileTemp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
