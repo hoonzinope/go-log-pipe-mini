@@ -7,12 +7,9 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 	"test_gluent_mini/confmanager"
 	"test_gluent_mini/data"
 )
-
-var m sync.RWMutex
 
 func ManagingFileNode(
 	inputConfig confmanager.InputConfig,
@@ -34,17 +31,18 @@ func ManagingFileNode(
 		if !_isFile(file) {
 			continue
 		}
+		m.Lock()
 		if _, exists := offsetMap[file]; !exists {
 			offsetMap[file] = 0 // Initialize offset if not present
 		}
+		m.Unlock()
 		fileCtx, cancel := context.WithCancel(cancelCtx)
 		cancelMap[file] = cancel
 		// Start a goroutine to tail the file
 		go TailFile(fileCtx, inputChan,
 			_name, file, _parser, offsetMap[file])
 	}
-	go _watch(cancelCtx, filePatten,
-		inputChan, _name, _parser)
+	//go _watch(cancelCtx, filePatten,inputChan, _name, _parser)
 }
 
 func _dirToFilePattern(dir string) string {
@@ -96,7 +94,10 @@ func _watchFiles(filepattern string,
 	}
 	// new file go routine
 	for _, file := range newFiles {
-		if _, exists := offsetMap[file]; !exists {
+		m.Lock()
+		_, exists := offsetMap[file]
+		m.Unlock()
+		if !exists {
 			offsetMap[file] = 0 // Initialize offset for new files
 			fileCtx, cancel := context.WithCancel(cancelCtx)
 			cancelMap[file] = cancel // Store the cancel function for later use
@@ -109,11 +110,13 @@ func _watchFiles(filepattern string,
 
 	// delete not existing files
 	var toDeleteFiles []string
-	for file := range cancelMap {
+	m.Lock()
+	for file := range offsetMap {
 		if !slices.Contains(newFiles, file) {
 			toDeleteFiles = append(toDeleteFiles, file)
 		}
 	}
+	m.Unlock()
 	if len(toDeleteFiles) != 0 {
 		for _, file := range toDeleteFiles {
 			cancel, exists := cancelMap[file]

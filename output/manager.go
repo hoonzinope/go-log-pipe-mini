@@ -48,5 +48,5 @@ func _out(ctx context.Context, outputFunc func(string), lineChan chan string) {
 }
 
 func _println(logLine string) {
-	//fmt.Printf("%s\n", logLine)
+	fmt.Printf("%s\n", logLine)
 }

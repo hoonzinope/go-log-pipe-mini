@@ -2,11 +2,13 @@ package input
 
 import (
 	"context"
+	"sync"
 	"test_gluent_mini/confmanager"
 	"test_gluent_mini/data"
 	"test_gluent_mini/offset"
 )
 
+var m sync.RWMutex
 var offsetMap = make(map[string]int64)
 var cancelCtx context.Context
 var inputChannel map[string]chan data.InputData
@@ -15,6 +17,8 @@ var offsetChannel chan data.InputData
 var cancelMap = make(map[string]context.CancelFunc)
 
 func init() {
+	m.Lock()
+	defer m.Unlock()
 	offsets, err := offset.GetOffsetMap()
 	if err != nil {
 		panic("Error reading offsets: " + err.Error())

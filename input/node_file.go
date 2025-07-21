@@ -50,7 +50,7 @@ func _tail(tag string, filePath string, parser string, offSetN int64) ([]data.In
 	scanner := bufio.NewScanner(file)
 	var (
 		results    []data.InputData
-		lastOffset int64
+		lastOffset int64 = offSetN
 	)
 	for scanner.Scan() {
 		line := scanner.Text()
