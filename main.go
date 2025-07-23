@@ -15,9 +15,6 @@ import (
 )
 
 func offsetInitialization() {
-	shared.M.Lock()
-	defer shared.M.Unlock()
-
 	_, err := offset.GetOffsetMap()
 	if err != nil {
 		fmt.Printf("Error getting offset map: %v\n", err)
