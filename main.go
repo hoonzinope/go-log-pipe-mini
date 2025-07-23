@@ -14,12 +14,24 @@ import (
 	"test_gluent_mini/shared"
 )
 
-// var offset_channel = make(chan data.InputData, 1000)
-// var ctx, cancel = context.WithCancel(context.Background())
-// var wg sync.WaitGroup
+func offsetSetting() {
+	shared.M.Lock()
+	defer shared.M.Unlock()
+
+	offsetMap, err := offset.GetOffsetMap()
+	if err != nil {
+		fmt.Printf("Error getting offset map: %v\n", err)
+		return
+	}
+	for file, off := range offsetMap {
+		shared.OffsetMap[file] = off // Initialize offset map with existing offsets
+	}
+	fmt.Printf("Offset map initialized: %+v\n", shared.OffsetMap)
+}
 
 func main() {
 	fmt.Println("Starting the Gluent Mini application...")
+	offsetSetting() // Initialize offsets from the offset file
 	inputChannel := shared.InputChannel
 	filterChannel := shared.FilterChannel
 	_, cancel := shared.Ctx, shared.Cancel
