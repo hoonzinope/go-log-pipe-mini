@@ -33,7 +33,7 @@ func main() {
 
 	for _, inputConfig := range config.Inputs {
 		inputChannel[inputConfig.Name] = make(chan shared.InputData, 1000)
-		filterChannel[inputConfig.Name] = make(chan string, 1000)
+		filterChannel[inputConfig.Name] = make(chan shared.InputData, 1000)
 	}
 
 	signalChan := make(chan os.Signal, 1)

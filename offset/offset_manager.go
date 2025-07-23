@@ -102,5 +102,6 @@ func _write_offset() error {
 			return fmt.Errorf("error writing to file %s: %w", offsetFileTemp, err)
 		}
 	}
+	fmt.Printf("Offsets written to %s successfully.\n", offsetFileTemp)
 	return nil
 }

@@ -26,7 +26,7 @@ func TailFile(ctx context.Context,
 				for _, inputData := range inputDatas {
 					inputChan <- inputData
 				}
-				shared.OffsetChannel <- inputDatas[len(inputDatas)-1]
+
 				newOffset = lastOffset // Update the offset
 			}
 		}

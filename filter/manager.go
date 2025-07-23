@@ -52,7 +52,7 @@ func _filterLine(ctx context.Context,
 			return // Exit if the context is cancelled
 		case lineInputData := <-shared.InputChannel[name]:
 			if filterFunc(lineInputData, mode, funcList) {
-				shared.FilterChannel[name] <- lineInputData.Raw
+				shared.FilterChannel[name] <- lineInputData
 			}
 		}
 	}

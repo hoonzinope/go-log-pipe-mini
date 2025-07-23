@@ -28,15 +28,18 @@ func Out() {
 	}
 }
 
-func _out(ctx context.Context, outputFunc func(string), lineChan chan string) {
+func _out(ctx context.Context, outputFunc func(string), lineChan chan shared.InputData) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case logLine := <-lineChan:
-			if logLine != "" {
-				outputFunc(logLine)
+			if logLine.Json != nil {
+				outputFunc(fmt.Sprintf("%s: %v", logLine.Tag, logLine.Json))
+			} else if logLine.Raw != "" {
+				outputFunc(fmt.Sprintf("%s: %s", logLine.Tag, logLine.Raw))
 			}
+			shared.OffsetChannel <- logLine
 		}
 	}
 }
