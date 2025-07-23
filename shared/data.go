@@ -5,11 +5,13 @@ import (
 	"sync"
 )
 
-var OffsetChannel = make(chan InputData, 1000)
+var bufferSize = 1000
+
+var OffsetChannel = make(chan InputData, bufferSize)
 var Ctx, Cancel = context.WithCancel(context.Background())
 var CancelMap = make(map[string]context.CancelFunc)
-var InputChannel = make(map[string]chan InputData)
-var FilterChannel = make(map[string]chan InputData)
+var InputChannel = make(map[string]chan InputData, bufferSize)
+var FilterChannel = make(map[string]chan InputData, bufferSize)
 var M sync.RWMutex
 var OffsetMap = make(map[string]int64)
 var Wg sync.WaitGroup
