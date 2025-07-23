@@ -14,24 +14,21 @@ import (
 	"test_gluent_mini/shared"
 )
 
-func offsetSetting() {
+func offsetInitialization() {
 	shared.M.Lock()
 	defer shared.M.Unlock()
 
-	offsetMap, err := offset.GetOffsetMap()
+	_, err := offset.GetOffsetMap()
 	if err != nil {
 		fmt.Printf("Error getting offset map: %v\n", err)
 		return
-	}
-	for file, off := range offsetMap {
-		shared.OffsetMap[file] = off // Initialize offset map with existing offsets
 	}
 	fmt.Printf("Offset map initialized: %+v\n", shared.OffsetMap)
 }
 
 func main() {
 	fmt.Println("Starting the Gluent Mini application...")
-	offsetSetting() // Initialize offsets from the offset file
+	offsetInitialization() // Initialize offsets from the offset file
 	inputChannel := shared.InputChannel
 	filterChannel := shared.FilterChannel
 	_, cancel := shared.Ctx, shared.Cancel

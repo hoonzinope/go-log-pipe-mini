@@ -84,7 +84,7 @@ func _watch(ctx context.Context,
 func _watchFiles(filepattern string,
 	files []string, inputChan chan shared.InputData,
 	name string, parser string) ([]string, error) {
-	time.Sleep(5 * time.Second) // Simulate a delay for file watching
+	time.Sleep(1 * time.Second) // Simulate a delay for file watching
 	shared.M.Lock()
 	defer shared.M.Unlock()
 

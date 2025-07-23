@@ -13,6 +13,8 @@ const offsetFilePath string = "./offset.state"
 var lastFlushTime time.Time = time.Now()
 
 func GetOffsetMap() (map[string]int64, error) {
+	shared.M.Lock()
+	defer shared.M.Unlock()
 	if len(shared.OffsetMap) == 0 {
 		offsets, err := _read()
 		if err != nil {
