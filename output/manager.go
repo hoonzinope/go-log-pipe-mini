@@ -35,9 +35,9 @@ func _out(ctx context.Context, outputFunc func(string), lineChan chan shared.Inp
 			return
 		case logLine := <-lineChan:
 			if logLine.Json != nil {
-				outputFunc(fmt.Sprintf("%s: %v", logLine.Tag, logLine.Json))
+				outputFunc(fmt.Sprintf("%s %s: %v", logLine.Tag, logLine.FileName, logLine.Json))
 			} else if logLine.Raw != "" {
-				outputFunc(fmt.Sprintf("%s: %s", logLine.Tag, logLine.Raw))
+				outputFunc(fmt.Sprintf("%s %s: %s", logLine.Tag, logLine.FileName, logLine.Raw))
 			}
 			shared.OffsetChannel <- logLine
 		}

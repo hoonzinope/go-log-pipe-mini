@@ -9,6 +9,7 @@ import (
 	"strings"
 	"test_gluent_mini/confmanager"
 	"test_gluent_mini/shared"
+	"time"
 )
 
 func ManagingFileNode(
@@ -39,10 +40,9 @@ func ManagingFileNode(
 		fileCtx, cancel := context.WithCancel(shared.Ctx)
 		shared.CancelMap[file] = cancel
 		// Start a goroutine to tail the file
-		go TailFile(fileCtx, inputChan,
-			_name, file, _parser, shared.OffsetMap[file])
+		go TailFile(fileCtx, inputChan, _name, file, _parser, shared.OffsetMap[file])
 	}
-	//go _watch(cancelCtx, filePatten,inputChan, _name, _parser)
+	go _watch(shared.Ctx, filePatten, files, inputChan, _name, _parser)
 }
 
 func _dirToFilePattern(dir string) string {
@@ -63,7 +63,7 @@ func _isFile(path string) bool {
 }
 
 func _watch(ctx context.Context,
-	filepattern string, inputChan chan shared.InputData,
+	filepattern string, files []string, inputChan chan shared.InputData,
 	name string, parser string) {
 	for {
 		select {
@@ -72,7 +72,7 @@ func _watch(ctx context.Context,
 		default:
 			// Watch the files for changes
 			_, err := _watchFiles(
-				filepattern, inputChan, name, parser)
+				filepattern, files, inputChan, name, parser)
 			if err != nil {
 				fmt.Printf("Error watching files: %v\n", err)
 				return
@@ -82,9 +82,9 @@ func _watch(ctx context.Context,
 }
 
 func _watchFiles(filepattern string,
-	inputChan chan shared.InputData,
+	files []string, inputChan chan shared.InputData,
 	name string, parser string) ([]string, error) {
-
+	time.Sleep(1 * time.Second) // Simulate a delay for file watching
 	shared.M.Lock()
 	defer shared.M.Unlock()
 
@@ -94,7 +94,9 @@ func _watchFiles(filepattern string,
 	}
 	// new file go routine
 	for _, file := range newFiles {
-		if _, exists := shared.OffsetMap[file]; !exists {
+		exists := slices.Contains(files, file)
+		if !exists {
+			fmt.Printf("New file detected: %s\n", file)
 			shared.OffsetMap[file] = 0 // Initialize offset for new files
 			fileCtx, cancel := context.WithCancel(shared.Ctx)
 			shared.CancelMap[file] = cancel // Store the cancel function for later use
@@ -103,11 +105,12 @@ func _watchFiles(filepattern string,
 				name, file, parser, shared.OffsetMap[file])
 		}
 	}
-
 	// delete not existing files
 	var toDeleteFiles []string
-	for file := range shared.OffsetMap {
-		if !slices.Contains(newFiles, file) {
+	for _, file := range files {
+		exists := slices.Contains(newFiles, file)
+		if !exists {
+			fmt.Printf("File no longer exists: %s\n", file)
 			toDeleteFiles = append(toDeleteFiles, file)
 		}
 	}
@@ -121,6 +124,5 @@ func _watchFiles(filepattern string,
 			}
 		}
 	}
-
 	return newFiles, nil
 }

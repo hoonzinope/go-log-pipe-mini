@@ -10,23 +10,23 @@ import (
 const offsetFileTemp string = "./offset.tmp"
 const offsetFilePath string = "./offset.state"
 
-var offsetMap map[string]int64 = nil
 var lastFlushTime time.Time = time.Now()
 
 func GetOffsetMap() (map[string]int64, error) {
-	if offsetMap == nil {
-		offsetMap = make(map[string]int64)
+	shared.M.Lock()
+	defer shared.M.Unlock()
+	if len(shared.OffsetMap) == 0 {
 		offsets, err := _read()
 		if err != nil {
 			fmt.Printf("Error reading offsets: %v\n", err)
 		} else {
 			for file, off := range offsets {
-				offsetMap[file] = off
+				shared.OffsetMap[file] = off
 				fmt.Printf("Last offset for %s: %d\n", file, off)
 			}
 		}
 	}
-	return offsetMap, nil
+	return shared.OffsetMap, nil
 }
 
 func _read() (map[string]int64, error) {
@@ -97,7 +97,7 @@ func _write_offset() error {
 	}
 	defer file.Close()
 
-	for fileName, offset := range offsetMap {
+	for fileName, offset := range shared.OffsetMap {
 		if _, err := file.WriteString(fmt.Sprintf("%s %d\n", fileName, offset)); err != nil {
 			return fmt.Errorf("error writing to file %s: %w", offsetFileTemp, err)
 		}
