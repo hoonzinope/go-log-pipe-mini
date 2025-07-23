@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"test_gluent_mini/data"
 	"test_gluent_mini/input/parse"
+	"test_gluent_mini/shared"
 )
 
 func TailFile(ctx context.Context,
-	inputChan chan data.InputData,
+	inputChan chan shared.InputData,
 	tag string, file string, parser string, offSetN int64) {
 	newOffset := offSetN
 	for {
@@ -26,14 +26,15 @@ func TailFile(ctx context.Context,
 				for _, inputData := range inputDatas {
 					inputChan <- inputData
 				}
-				offsetChannel <- inputDatas[len(inputDatas)-1]
+
 				newOffset = lastOffset // Update the offset
 			}
 		}
 	}
 }
 
-func _tail(tag string, filePath string, parser string, offSetN int64) ([]data.InputData, int64) {
+func _tail(tag string, filePath string,
+	parser string, offSetN int64) ([]shared.InputData, int64) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Printf("Error opening file %s: %v\n", filePath, err)
@@ -49,13 +50,13 @@ func _tail(tag string, filePath string, parser string, offSetN int64) ([]data.In
 
 	scanner := bufio.NewScanner(file)
 	var (
-		results    []data.InputData
+		results    []shared.InputData
 		lastOffset int64 = offSetN
 	)
 	for scanner.Scan() {
 		line := scanner.Text()
 		offset, _ := file.Seek(0, io.SeekCurrent)
-		inputData := data.InputData{
+		inputData := shared.InputData{
 			FileName: filePath,
 			Tag:      tag,
 			Raw:      line,
@@ -71,7 +72,7 @@ func _tail(tag string, filePath string, parser string, offSetN int64) ([]data.In
 	return results, lastOffset
 }
 
-func _parseJSON(line string, inputData data.InputData) data.InputData {
+func _parseJSON(line string, inputData shared.InputData) shared.InputData {
 	if line == "" {
 		return inputData // Return empty struct if input line is empty
 	}

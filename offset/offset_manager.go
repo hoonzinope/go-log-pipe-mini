@@ -1,15 +1,11 @@
 package offset
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"sync"
-	"test_gluent_mini/data"
+	"test_gluent_mini/shared"
 	"time"
 )
-
-var m sync.Mutex
 
 const offsetFileTemp string = "./offset.tmp"
 const offsetFilePath string = "./offset.state"
@@ -59,19 +55,19 @@ func _read() (map[string]int64, error) {
 	return offsets, nil
 }
 
-func Write(ctx context.Context, offsetChan chan data.InputData) {
+func Write() {
 	for {
 		select {
-		case <-ctx.Done():
+		case <-shared.Ctx.Done():
 			fmt.Println("Context cancelled, stopping offset writing.")
 			return
-		case offsetData := <-offsetChan:
+		case offsetData := <-shared.OffsetChannel:
 			if offsetData.Offset != 0 {
-				m.Lock()
-				offsetMap[offsetData.FileName] = offsetData.Offset // Update the offset map
-				m.Unlock()
+				shared.M.Lock()
+				shared.OffsetMap[offsetData.FileName] = offsetData.Offset // Update the offset map
+				shared.M.Unlock()
 				if time.Since(lastFlushTime) > 10*time.Second {
-					err := _write_offset(offsetData)
+					err := _write_offset()
 					if err != nil {
 						fmt.Printf("Error writing offset for %s: %v\n", offsetData.FileName, err)
 						continue // Skip to the next iteration if there's an error
@@ -87,9 +83,9 @@ func Write(ctx context.Context, offsetChan chan data.InputData) {
 	}
 }
 
-func _write_offset(offsetData data.InputData) error {
-	m.Lock()
-	defer m.Unlock()
+func _write_offset() error {
+	shared.M.Lock()
+	defer shared.M.Unlock()
 	// Open the file in append mode
 	file, err := os.OpenFile(offsetFileTemp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
@@ -106,5 +102,6 @@ func _write_offset(offsetData data.InputData) error {
 			return fmt.Errorf("error writing to file %s: %w", offsetFileTemp, err)
 		}
 	}
+	fmt.Printf("Offsets written to %s successfully.\n", offsetFileTemp)
 	return nil
 }

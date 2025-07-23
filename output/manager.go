@@ -4,19 +4,13 @@ import (
 	"context"
 	"fmt"
 	"test_gluent_mini/confmanager"
+	"test_gluent_mini/shared"
 )
 
-var cancel_ctx context.Context
 var config confmanager.Config
-var filterLineChan map[string]chan string
 
-func Configure(
-	ctx context.Context,
-	conf confmanager.Config,
-	filterLineChannel map[string]chan string) {
+func Configure(conf confmanager.Config) {
 	config = conf
-	cancel_ctx = ctx
-	filterLineChan = filterLineChannel
 }
 
 func Out() {
@@ -26,7 +20,7 @@ func Out() {
 			// Print to standard output
 			var outputFunc = _println
 			for _, target := range outputConfig.Targets {
-				go _out(cancel_ctx, outputFunc, filterLineChan[target])
+				go _out(shared.Ctx, outputFunc, shared.FilterChannel[target])
 			}
 		default:
 			fmt.Printf("Unsupported output type: %s\n", outputConfig.Type)
@@ -34,15 +28,18 @@ func Out() {
 	}
 }
 
-func _out(ctx context.Context, outputFunc func(string), lineChan chan string) {
+func _out(ctx context.Context, outputFunc func(string), lineChan chan shared.InputData) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case logLine := <-lineChan:
-			if logLine != "" {
-				outputFunc(logLine)
+			if logLine.Json != nil {
+				outputFunc(fmt.Sprintf("%s: %v", logLine.Tag, logLine.Json))
+			} else if logLine.Raw != "" {
+				outputFunc(fmt.Sprintf("%s: %s", logLine.Tag, logLine.Raw))
 			}
+			shared.OffsetChannel <- logLine
 		}
 	}
 }

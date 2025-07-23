@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"test_gluent_mini/shared"
 	"time"
 )
 
 var log_folder = "./logs"
 
-func GenLogWithFolder(ctx context.Context) {
+func GenLogWithFolder() {
+	ctx := shared.Ctx
 	if _, err := os.Stat(log_folder); os.IsNotExist(err) {
 		if err := os.Mkdir(log_folder, 0755); err != nil {
 			fmt.Printf("Error creating log folder: %v\n", err)
@@ -75,7 +77,8 @@ func stringWithCharset(length int, charset string) string {
 
 var json_log_folder = "./json_logs"
 
-func GenerateJsonLog(ctx context.Context) {
+func GenerateJsonLog() {
+	ctx := shared.Ctx
 	if _, err := os.Stat(json_log_folder); os.IsNotExist(err) {
 		if err := os.Mkdir(json_log_folder, 0755); err != nil {
 			fmt.Printf("Error creating JSON log folder: %v\n", err)

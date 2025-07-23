@@ -1,30 +1,28 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"test_gluent_mini/confmanager"
-	"test_gluent_mini/data"
 	"test_gluent_mini/filter"
 	"test_gluent_mini/generate"
 	"test_gluent_mini/input"
 	"test_gluent_mini/offset"
 	"test_gluent_mini/output"
+	"test_gluent_mini/shared"
 )
 
-// var log_line_channel = make(chan data.InputData, 1000)
-
-// var filter_line_channel = make(chan string, 1000)
-var offset_channel = make(chan data.InputData, 1000)
-var ctx, cancel = context.WithCancel(context.Background())
-var wg sync.WaitGroup
+// var offset_channel = make(chan data.InputData, 1000)
+// var ctx, cancel = context.WithCancel(context.Background())
+// var wg sync.WaitGroup
 
 func main() {
 	fmt.Println("Starting the Gluent Mini application...")
+	inputChannel := shared.InputChannel
+	filterChannel := shared.FilterChannel
+	_, cancel := shared.Ctx, shared.Cancel
 
 	config, err := confmanager.ReadConfig("config.yml")
 	if err != nil {
@@ -33,11 +31,9 @@ func main() {
 	}
 	fmt.Printf("Configuration loaded: %+v\n", config)
 
-	inputChannel := make(map[string]chan data.InputData)
-	filterChannel := make(map[string]chan string)
 	for _, inputConfig := range config.Inputs {
-		inputChannel[inputConfig.Name] = make(chan data.InputData, 1000)
-		filterChannel[inputConfig.Name] = make(chan string, 1000)
+		inputChannel[inputConfig.Name] = make(chan shared.InputData, 1000)
+		filterChannel[inputConfig.Name] = make(chan shared.InputData, 1000)
 	}
 
 	signalChan := make(chan os.Signal, 1)
@@ -49,39 +45,39 @@ func main() {
 		fmt.Println("Cleanup complete. Exiting.")
 	}()
 
-	wg.Add(1)
+	shared.Wg.Add(1)
 	go func() {
-		defer wg.Done()
-		generate.GenLogWithFolder(ctx)
-		generate.GenerateJsonLog(ctx)
+		defer shared.Wg.Done()
+		generate.GenLogWithFolder()
+		generate.GenerateJsonLog()
 	}()
 
-	input.Configure(ctx, config, inputChannel, offset_channel)
-	wg.Add(1)
+	input.Configure(config)
+	shared.Wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer shared.Wg.Done()
 		input.ManagingNode()
 	}()
 
-	filter.Configure(ctx, config, inputChannel, filterChannel)
-	wg.Add(1)
+	filter.Configure(config)
+	shared.Wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer shared.Wg.Done()
 		filter.FilterLines()
 	}()
 
-	output.Configure(ctx, config, filterChannel)
-	wg.Add(1)
+	output.Configure(config)
+	shared.Wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer shared.Wg.Done()
 		output.Out()
 	}()
 
-	wg.Add(1)
+	shared.Wg.Add(1)
 	go func() {
-		defer wg.Done()
-		offset.Write(ctx, offset_channel)
+		defer shared.Wg.Done()
+		offset.Write()
 	}()
 
-	wg.Wait()
+	shared.Wg.Wait()
 }
