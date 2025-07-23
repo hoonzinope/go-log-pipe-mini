@@ -20,7 +20,7 @@ func offsetInitialization() {
 		fmt.Printf("Error getting offset map: %v\n", err)
 		return
 	}
-	fmt.Printf("Offset map initialized: %+v\n", shared.OffsetMap)
+	fmt.Printf("Offset map initialized with %d entries.\n", len(shared.OffsetMap))
 }
 
 func main() {
