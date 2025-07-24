@@ -37,6 +37,13 @@ type FilterRule struct {
 type OutputConfig struct {
 	Type    string   `yaml:"TYPE"`
 	Targets []string `yaml:"TARGETS"`
+	Options struct {
+		Path     string `yaml:"PATH"`
+		Filename string `yaml:"FILENAME"`  // e.g., "output.log"
+		Rolling  string `yaml:"ROLLING"`   // daily, hourly, monthly
+		MaxSize  string `yaml:"MAX_SIZE"`  // e.g., "100MB"
+		MaxFiles int    `yaml:"MAX_FILES"` // e.g., 7
+	} `yaml:"OPTIONS"`
 }
 
 func ReadConfig(filepath string) (Config, error) {

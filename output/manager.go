@@ -9,6 +9,10 @@ import (
 
 var config confmanager.Config
 
+type Outputer interface {
+	Out(ctx context.Context)
+}
+
 func Configure(conf confmanager.Config) {
 	config = conf
 }
@@ -17,33 +21,23 @@ func Out() {
 	for _, outputConfig := range config.Outputs {
 		switch outputConfig.Type {
 		case "stdout":
-			// Print to standard output
-			var outputFunc = _println
-			for _, target := range outputConfig.Targets {
-				go _out(shared.Ctx, outputFunc, shared.FilterChannel[target])
+			consoleOutput := ConsoleOutput{
+				Type:    outputConfig.Type,
+				Targets: outputConfig.Targets,
 			}
+			consoleOutput.Out(shared.Ctx)
+		case "file":
+			fileOutput := FileOutput{
+				Targets:  outputConfig.Targets,
+				Path:     outputConfig.Options.Path,
+				Filename: outputConfig.Options.Filename,
+				Rolling:  outputConfig.Options.Rolling,
+				MaxSize:  outputConfig.Options.MaxSize,
+				MaxFiles: outputConfig.Options.MaxFiles,
+			}
+			fileOutput.Out(shared.Ctx)
 		default:
 			fmt.Printf("Unsupported output type: %s\n", outputConfig.Type)
 		}
 	}
-}
-
-func _out(ctx context.Context, outputFunc func(string), lineChan chan shared.InputData) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case logLine := <-lineChan:
-			if logLine.Json != nil {
-				outputFunc(fmt.Sprintf("%s %s: %v", logLine.Tag, logLine.FileName, logLine.Json))
-			} else if logLine.Raw != "" {
-				outputFunc(fmt.Sprintf("%s %s: %s", logLine.Tag, logLine.FileName, logLine.Raw))
-			}
-			shared.OffsetChannel <- logLine
-		}
-	}
-}
-
-func _println(logLine string) {
-	fmt.Printf("%s\n", logLine)
 }

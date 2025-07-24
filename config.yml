@@ -2,7 +2,7 @@ INPUTS:
   - NAME: syslog
     TYPE: file
     PATH: ./logs/
-    PARSER: txt
+    PARSER: text
   - NAME: applog
     TYPE: file
     PATH: ./json_logs/
@@ -28,3 +28,19 @@ FILTERS:
 OUTPUTS:
   - TYPE: stdout
     TARGETS: [syslog, applog]
+  - TYPE: file
+    TARGETS: [syslog]
+    OPTIONS:
+      PATH: ./output_logs/
+      FILENAME: syslog.log
+      ROLLING: daily    # 또는 hourly, monthly 등
+      MAX_SIZE: 100MB   # 또는 104857600 (bytes 단위)
+      MAX_FILES: 7      # 보존 파일 개수 제한(선택)
+  - TYPE: file
+    TARGETS: [applog]
+    OPTIONS:
+      PATH: ./output_logs/
+      FILENAME: applog.log
+      ROLLING: daily    # 또는 hourly, monthly 등
+      MAX_SIZE: 100MB   # 또는 104857600 (bytes 단위)
+      MAX_FILES: 7      # 보존 파일 개수 제한(선택)
