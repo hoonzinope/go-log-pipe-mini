@@ -216,6 +216,8 @@ func (f FileOutput) Out(ctx context.Context) {
 					}
 					shared.OffsetChannel <- logLine
 				}
+				batch = nil // Clear the batch for the next iteration
+				timer.Stop()
 			}
 		}(ctx, lineChan)
 	}
