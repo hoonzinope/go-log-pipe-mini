@@ -7,6 +7,14 @@ import (
 	"test_gluent_mini/shared"
 )
 
+const (
+	ROLLING_DEFAULT      = "daily"
+	MAX_SIZE_DEFAULT     = "100MB"
+	MAX_FILES_DEFAULT    = 7
+	BATCH_SIZE_DEFAULT   = 10
+	FLUSH_INTERVAL_DEFAULT = "1s"
+)
+
 var config confmanager.Config
 
 type Outputer interface {
@@ -24,6 +32,8 @@ func Out() {
 			consoleOutput := ConsoleOutput{
 				Type:    outputConfig.Type,
 				Targets: outputConfig.Targets,
+				BATCH_SIZE: outputConfig.Options.BATCH_SIZE,
+				FLUSH_INTERVAL: outputConfig.Options.FLUSH_INTERVAL,
 			}
 			consoleOutput.Out(shared.Ctx)
 		case "file":
@@ -34,6 +44,8 @@ func Out() {
 				Rolling:  outputConfig.Options.Rolling,
 				MaxSize:  outputConfig.Options.MaxSize,
 				MaxFiles: outputConfig.Options.MaxFiles,
+				BATCH_SIZE: outputConfig.Options.BATCH_SIZE,
+				FLUSH_INTERVAL: outputConfig.Options.FLUSH_INTERVAL,
 			}
 			fileOutput.Out(shared.Ctx)
 		default:

@@ -28,6 +28,9 @@ FILTERS:
 OUTPUTS:
   - TYPE: stdout
     TARGETS: [syslog, applog]
+    OPTIONS:
+      BATCH_SIZE: 5
+      FLUSH_INTERVAL: 2s
   - TYPE: file
     TARGETS: [syslog]
     OPTIONS:
@@ -36,6 +39,8 @@ OUTPUTS:
       ROLLING: daily    # 또는 hourly, monthly 등
       MAX_SIZE: 100MB   # 또는 104857600 (bytes 단위)
       MAX_FILES: 7      # 보존 파일 개수 제한(선택)
+      BATCH_SIZE : 10
+      FLUSH_INTERVAL: 5s
   - TYPE: file
     TARGETS: [applog]
     OPTIONS:
@@ -44,3 +49,5 @@ OUTPUTS:
       ROLLING: daily    # 또는 hourly, monthly 등
       MAX_SIZE: 100MB   # 또는 104857600 (bytes 단위)
       MAX_FILES: 7      # 보존 파일 개수 제한(선택)
+      BATCH_SIZE : 10
+      FLUSH_INTERVAL: 5s

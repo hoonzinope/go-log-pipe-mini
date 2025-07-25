@@ -43,6 +43,8 @@ type OutputConfig struct {
 		Rolling  string `yaml:"ROLLING"`   // daily, hourly, monthly
 		MaxSize  string `yaml:"MAX_SIZE"`  // e.g., "100MB"
 		MaxFiles int    `yaml:"MAX_FILES"` // e.g., 7
+		BATCH_SIZE int  `yaml:"BATCH_SIZE"` // e.g., 10
+		FLUSH_INTERVAL string `yaml:"FLUSH_INTERVAL"` // e.g., "5s"
 	} `yaml:"OPTIONS"`
 }
 
