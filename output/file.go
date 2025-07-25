@@ -17,7 +17,9 @@ type FileOutput struct {
 	Filename string
 	Rolling  string
 	MaxSize  string
-	MaxFiles int
+	MaxFiles     int
+	BATCH_SIZE   int
+	FLUSH_INTERVAL string
 }
 
 func (f FileOutput) _writeToFile(logLine shared.InputData) error {
@@ -166,15 +168,49 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 }
 
 func (f FileOutput) Out(ctx context.Context) {
+	if f.BATCH_SIZE == 0 {
+		f.BATCH_SIZE = BATCH_SIZE_DEFAULT
+	}
+	if f.FLUSH_INTERVAL == "" {
+		f.FLUSH_INTERVAL = FLUSH_INTERVAL_DEFAULT
+	}
+	if f.Rolling == "" {
+		f.Rolling = ROLLING_DEFAULT
+	}
+	if f.MaxSize == "" {
+		f.MaxSize = MAX_SIZE_DEFAULT
+	}
+	if f.MaxFiles == 0 {
+		f.MaxFiles = MAX_FILES_DEFAULT
+	}
 
+	duration , err := time.ParseDuration(f.FLUSH_INTERVAL)
+	if err != nil {
+		fmt.Printf("Error parsing FLUSH_INTERVAL %s: %v\n", f.FLUSH_INTERVAL, err)
+		return
+	}
 	for _, target := range f.Targets {
 		lineChan := shared.FilterChannel[target]
 		go func(ctx context.Context, lineChan chan shared.InputData) {
 			for {
-				select {
-				case <-ctx.Done():
-					return
-				case logLine := <-lineChan:
+				batch := make([]shared.InputData, 0, f.BATCH_SIZE)
+				timer := time.NewTimer(duration)
+				BATCHLOOP:
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case logLine := <-lineChan:
+						// Write immediately if no batching or flushing is configured
+						batch = append(batch, logLine)
+						if len(batch) >= f.BATCH_SIZE {
+							break BATCHLOOP
+						}
+					case <-timer.C:
+						break BATCHLOOP
+					}
+				}
+				for _, logLine := range batch {
 					if err := f._writeToFile(logLine); err != nil {
 						fmt.Printf("Error writing to file: %v\n", err)
 					}
