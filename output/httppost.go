@@ -97,7 +97,7 @@ func (h HttpOutput) _waitForEndpointReady(timeout time.Duration) error {
 		return fmt.Errorf("Error sending HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("HTTP endpoint not ready, status: %s", resp.Status)
 	}
 	return nil
