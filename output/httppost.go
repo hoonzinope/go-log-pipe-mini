@@ -114,9 +114,6 @@ func (h HttpOutput) _writeToHttp(logLine shared.InputData, timeout time.Duration
 
 	// Send the JSON data to the HTTP endpoint
 	// add timeout to the request
-	if h.Timeout == "" {
-		h.Timeout = "5s" // Default timeout if not specified
-	}
 	client := &http.Client{
 		Timeout: timeout, // Set a timeout for the request
 	}
