@@ -11,6 +11,7 @@ import (
 	"test_gluent_mini/input"
 	"test_gluent_mini/offset"
 	"test_gluent_mini/output"
+	"test_gluent_mini/server"
 	"test_gluent_mini/shared"
 )
 
@@ -50,12 +51,18 @@ func main() {
 		cancel() // Cancel the context to stop all goroutines
 		fmt.Println("Cleanup complete. Exiting.")
 	}()
-
+	// Start the generate process for test data generation
 	shared.Wg.Add(1)
 	go func() {
 		defer shared.Wg.Done()
 		generate.GenLogWithFolder()
 		generate.GenerateJsonLog()
+	}()
+	// Start the server to handle incoming requests for test data
+	shared.Wg.Add(1)
+	go func() {
+		defer shared.Wg.Done()
+		server.Run()
 	}()
 
 	input.Configure(config)
@@ -84,6 +91,9 @@ func main() {
 		defer shared.Wg.Done()
 		offset.Write()
 	}()
+
+	<-shared.Ctx.Done()         // Wait for the context to be cancelled before proceeding
+	server.Shutdown(shared.Ctx) // Ensure the server is properly shut down
 
 	shared.Wg.Wait()
 }

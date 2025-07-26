@@ -8,20 +8,20 @@ import (
 )
 
 type ConsoleOutput struct {
-	Type    string
-	Targets []string
-	BATCH_SIZE int
+	Type           string
+	Targets        []string
+	BATCH_SIZE     int
 	FLUSH_INTERVAL string
 }
 
-func (c ConsoleOutput) Out(ctx context.Context) {
+func (c ConsoleOutput) Out(ctx context.Context, outputChannel map[string]chan shared.InputData) {
 	if c.BATCH_SIZE == 0 {
 		c.BATCH_SIZE = BATCH_SIZE_DEFAULT
 	}
 	if c.FLUSH_INTERVAL == "" {
 		c.FLUSH_INTERVAL = FLUSH_INTERVAL_DEFAULT
 	}
-	
+
 	// Print to standard output
 	duration, err := time.ParseDuration(c.FLUSH_INTERVAL)
 	if err != nil {
@@ -29,12 +29,12 @@ func (c ConsoleOutput) Out(ctx context.Context) {
 		return
 	}
 	for _, target := range c.Targets {
-		lineChan := shared.FilterChannel[target]
+		lineChan := outputChannel[target]
 		go func(ctx context.Context, lineChan chan shared.InputData) {
 			for {
 				batch := make([]shared.InputData, 0, c.BATCH_SIZE)
 				timer := time.NewTimer(duration)
-				BATCHLOOP: 
+			BATCHLOOP:
 				for {
 					select {
 					case <-ctx.Done():
@@ -49,12 +49,11 @@ func (c ConsoleOutput) Out(ctx context.Context) {
 						break BATCHLOOP
 					}
 				}
-				
+
 				for _, logLine := range batch {
 					if err := c._writeToConsole(logLine); err != nil {
 						fmt.Printf("Error writing to console: %v\n", err)
 					}
-					shared.OffsetChannel <- logLine
 				}
 			}
 		}(ctx, lineChan)
