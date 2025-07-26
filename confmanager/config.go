@@ -38,13 +38,17 @@ type OutputConfig struct {
 	Type    string   `yaml:"TYPE"`
 	Targets []string `yaml:"TARGETS"`
 	Options struct {
-		Path     string `yaml:"PATH"`
-		Filename string `yaml:"FILENAME"`  // e.g., "output.log"
-		Rolling  string `yaml:"ROLLING"`   // daily, hourly, monthly
-		MaxSize  string `yaml:"MAX_SIZE"`  // e.g., "100MB"
-		MaxFiles int    `yaml:"MAX_FILES"` // e.g., 7
-		BATCH_SIZE int  `yaml:"BATCH_SIZE"` // e.g., 10
-		FLUSH_INTERVAL string `yaml:"FLUSH_INTERVAL"` // e.g., "5s"
+		Url            string            `yaml:"URL"`     // e.g., "http://localhost:8080"
+		Method         string            `yaml:"METHOD"`  // e.g., "POST"
+		Headers        map[string]string `yaml:"HEADERS"` // e.g., {"Content-Type": "application/json"}
+		Timeout        string            `yaml:"TIMEOUT"` // e.g., "5s"
+		Path           string            `yaml:"PATH"`
+		Filename       string            `yaml:"FILENAME"`       // e.g., "output.log"
+		Rolling        string            `yaml:"ROLLING"`        // daily, hourly, monthly
+		MaxSize        string            `yaml:"MAX_SIZE"`       // e.g., "100MB"
+		MaxFiles       int               `yaml:"MAX_FILES"`      // e.g., 7
+		BATCH_SIZE     int               `yaml:"BATCH_SIZE"`     // e.g., 10
+		FLUSH_INTERVAL string            `yaml:"FLUSH_INTERVAL"` // e.g., "5s"
 	} `yaml:"OPTIONS"`
 }
 

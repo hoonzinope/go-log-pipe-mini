@@ -12,13 +12,13 @@ import (
 )
 
 type FileOutput struct {
-	Targets  []string
-	Path     string
-	Filename string
-	Rolling  string
-	MaxSize  string
-	MaxFiles     int
-	BATCH_SIZE   int
+	Targets        []string
+	Path           string
+	Filename       string
+	Rolling        string
+	MaxSize        string
+	MaxFiles       int
+	BATCH_SIZE     int
 	FLUSH_INTERVAL string
 }
 
@@ -167,7 +167,7 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 	return nil
 }
 
-func (f FileOutput) Out(ctx context.Context) {
+func (f FileOutput) Out(ctx context.Context, outputChannel map[string]chan shared.InputData) {
 	if f.BATCH_SIZE == 0 {
 		f.BATCH_SIZE = BATCH_SIZE_DEFAULT
 	}
@@ -184,18 +184,18 @@ func (f FileOutput) Out(ctx context.Context) {
 		f.MaxFiles = MAX_FILES_DEFAULT
 	}
 
-	duration , err := time.ParseDuration(f.FLUSH_INTERVAL)
+	duration, err := time.ParseDuration(f.FLUSH_INTERVAL)
 	if err != nil {
 		fmt.Printf("Error parsing FLUSH_INTERVAL %s: %v\n", f.FLUSH_INTERVAL, err)
 		return
 	}
 	for _, target := range f.Targets {
-		lineChan := shared.FilterChannel[target]
+		lineChan := outputChannel[target]
 		go func(ctx context.Context, lineChan chan shared.InputData) {
 			for {
 				batch := make([]shared.InputData, 0, f.BATCH_SIZE)
 				timer := time.NewTimer(duration)
-				BATCHLOOP:
+			BATCHLOOP:
 				for {
 					select {
 					case <-ctx.Done():
@@ -214,7 +214,6 @@ func (f FileOutput) Out(ctx context.Context) {
 					if err := f._writeToFile(logLine); err != nil {
 						fmt.Printf("Error writing to file: %v\n", err)
 					}
-					shared.OffsetChannel <- logLine
 				}
 				batch = nil // Clear the batch for the next iteration
 				timer.Stop()
