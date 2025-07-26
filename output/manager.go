@@ -97,6 +97,8 @@ func _broadcastFilteredData(outputChannel map[string]map[string]chan shared.Inpu
 		default:
 			for _, target := range targets {
 				select {
+				case <-shared.Ctx.Done():
+					return // Exit if the context is cancelled
 				case logLine := <-shared.InputChannel[target]:
 					for outputType, channels := range outputChannel {
 						if ch, exists := channels[target]; exists {
