@@ -96,15 +96,19 @@ func _broadcastFilteredData(outputChannel map[string]map[string]chan shared.Inpu
 			return // Exit if the context is cancelled
 		default:
 			for _, target := range targets {
-				logLine := <-shared.FilterChannel[target]
-				for outputType, channels := range outputChannel {
-					if ch, exists := channels[target]; exists {
-						ch <- logLine
-					} else {
-						fmt.Printf("No channel found for target %s in output type %s\n", target, outputType)
+				select {
+				case logLine := <-shared.InputChannel[target]:
+					for outputType, channels := range outputChannel {
+						if ch, exists := channels[target]; exists {
+							ch <- logLine
+						} else {
+							fmt.Printf("No channel found for target %s in output type %s\n", target, outputType)
+						}
 					}
+					shared.OffsetChannel <- logLine // send to offset channel after broadcasting
+				default:
+					// No data to broadcast, continue
 				}
-				shared.OffsetChannel <- logLine // send to offset channel after broadcasting
 			}
 		}
 	}
