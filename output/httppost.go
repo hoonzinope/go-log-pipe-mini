@@ -88,7 +88,6 @@ func (h HttpOutput) Out(ctx context.Context, outputChannel map[string]chan share
 }
 
 func (h HttpOutput) _waitForEndpointReady(timeout time.Duration) error {
-	// TODO: Implement health check logic to wait for the HTTP endpoint to be ready
 	req, err := http.NewRequest("HEAD", h.Url, nil)
 	if err != nil {
 		shared.Error_count.Add(1)

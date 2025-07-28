@@ -12,25 +12,28 @@ var Filter_count atomic.Int64 = atomic.Int64{}
 var Output_count atomic.Int64 = atomic.Int64{}
 var Error_count atomic.Int64 = atomic.Int64{}
 
-var durationSum int64 = 0
-var processedCount int64 = 0
+var durationSum atomic.Int64 = atomic.Int64{}
+var processedCount atomic.Int64 = atomic.Int64{}
 
 func AddLatency(duration time.Duration) {
-	atomic.AddInt64(&durationSum, int64(duration))
-	atomic.AddInt64(&processedCount, 1)
+	if duration < 0 {
+		return // Ignore negative durations
+	}
+	durationSum.Add(int64(duration))
+	processedCount.Add(1)
 }
 
 func GetAverageLatency() time.Duration {
-	if processedCount == 0 {
+	if processedCount.Load() == 0 {
 		return 0
 	}
-	s := atomic.LoadInt64(&durationSum)
-	c := atomic.LoadInt64(&processedCount)
+	s := durationSum.Load()
+	c := processedCount.Load()
 	if c == 0 {
 		return 0
 	}
 	avg := s / c
-	return time.Duration(avg) * time.Nanosecond
+	return time.Duration(avg)
 }
 
 func PrintStats(ctx context.Context) {

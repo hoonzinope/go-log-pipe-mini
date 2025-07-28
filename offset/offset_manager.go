@@ -19,7 +19,6 @@ func GetOffsetMap() (map[string]int64, error) {
 		offsets, err := _read()
 		if err != nil {
 			fmt.Printf("Error reading offsets: %v\n", err)
-			shared.Error_count.Add(1)
 			return nil, err
 		} else {
 			for file, off := range offsets {
@@ -36,11 +35,9 @@ func _read() (map[string]int64, error) {
 	file, err := os.Open(offsetFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			shared.Error_count.Add(1)
 			return offsets, nil // If the file doesn't exist, return an empty map
 		}
 		fmt.Printf("Error opening offsets file %s: %v\n", offsetFilePath, err)
-		shared.Error_count.Add(1)
 		return nil, err
 	}
 	defer file.Close()
@@ -74,7 +71,6 @@ func Write() {
 					err := _write_offset()
 					if err != nil {
 						fmt.Printf("Error writing offset for %s: %v\n", offsetData.FileName, err)
-						shared.Error_count.Add(1)
 						continue // Skip to the next iteration if there's an error
 					}
 					if err := os.Rename(offsetFileTemp, offsetFilePath); err == nil {
@@ -97,7 +93,6 @@ func _write_offset() error {
 		os.Create(offsetFileTemp) // Create the file if it doesn't exist
 		file, err = os.OpenFile(offsetFileTemp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
-			shared.Error_count.Add(1)
 			return fmt.Errorf("error opening file %s: %w", offsetFileTemp, err)
 		}
 	}
@@ -105,7 +100,6 @@ func _write_offset() error {
 
 	for fileName, offset := range shared.OffsetMap {
 		if _, err := file.WriteString(fmt.Sprintf("%s %d\n", fileName, offset)); err != nil {
-			shared.Error_count.Add(1)
 			return fmt.Errorf("error writing to file %s: %w", offsetFileTemp, err)
 		}
 	}
