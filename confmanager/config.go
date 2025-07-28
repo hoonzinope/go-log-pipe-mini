@@ -3,6 +3,7 @@ package confmanager
 import (
 	"fmt"
 	"os"
+	"test_gluent_mini/shared"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -55,6 +56,7 @@ type OutputConfig struct {
 func ReadConfig(filepath string) (Config, error) {
 	yamlFile, err := os.ReadFile(filepath)
 	if err != nil {
+		shared.Error_count.Add(1)
 		return Config{}, err
 	}
 	if len(yamlFile) == 0 {
@@ -62,6 +64,7 @@ func ReadConfig(filepath string) (Config, error) {
 	}
 	var config Config
 	if err := yaml.Unmarshal(yamlFile, &config); err != nil {
+		shared.Error_count.Add(1)
 		return Config{}, fmt.Errorf("error parsing config file %s: %v", filepath, err)
 	}
 	return config, nil

@@ -8,6 +8,7 @@ import (
 	"os"
 	"test_gluent_mini/input/parse"
 	"test_gluent_mini/shared"
+	"time"
 )
 
 func TailFile(ctx context.Context,
@@ -26,8 +27,8 @@ func TailFile(ctx context.Context,
 				for _, inputData := range inputDatas {
 					inputChan <- inputData
 				}
-
-				newOffset = lastOffset // Update the offset
+				shared.Input_count.Add(int64(len(inputDatas))) // Update the input count
+				newOffset = lastOffset                         // Update the offset
 			}
 		}
 	}
@@ -38,6 +39,7 @@ func _tail(tag string, filePath string,
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Printf("Error opening file %s: %v\n", filePath, err)
+		shared.Error_count.Add(1)
 		return nil, offSetN
 	}
 	defer file.Close()
@@ -45,6 +47,7 @@ func _tail(tag string, filePath string,
 	// Move to the last known offset
 	if _, err := file.Seek(offSetN, io.SeekStart); err != nil {
 		fmt.Printf("Error seeking to offset %d in file %s: %v\n", offSetN, filePath, err)
+		shared.Error_count.Add(1)
 		return nil, offSetN
 	}
 
@@ -57,11 +60,12 @@ func _tail(tag string, filePath string,
 		line := scanner.Text()
 		offset, _ := file.Seek(0, io.SeekCurrent)
 		inputData := shared.InputData{
-			FileName: filePath,
-			Tag:      tag,
-			Raw:      line,
-			Json:     nil,
-			Offset:   offset,
+			FileName:   filePath,
+			Tag:        tag,
+			Raw:        line,
+			Json:       nil,
+			Offset:     offset,
+			ReceivedAt: time.Now().UnixNano(),
 		}
 		if parser == "json" {
 			inputData = _parseJSON(line, inputData)
@@ -79,6 +83,7 @@ func _parseJSON(line string, inputData shared.InputData) shared.InputData {
 	jsonData, err := parse.ParseJSON(line)
 	if err != nil {
 		fmt.Printf("Error parsing JSON: %v\n", err)
+		shared.Error_count.Add(1)
 		return inputData
 	}
 	inputData.Json = jsonData

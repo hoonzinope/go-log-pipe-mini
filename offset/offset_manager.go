@@ -19,6 +19,7 @@ func GetOffsetMap() (map[string]int64, error) {
 		offsets, err := _read()
 		if err != nil {
 			fmt.Printf("Error reading offsets: %v\n", err)
+			return nil, err
 		} else {
 			for file, off := range offsets {
 				shared.OffsetMap[file] = off

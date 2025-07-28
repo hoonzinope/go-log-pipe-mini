@@ -6,6 +6,7 @@ import (
 	"slices"
 	"test_gluent_mini/confmanager"
 	"test_gluent_mini/shared"
+	"time"
 )
 
 const (
@@ -99,7 +100,7 @@ func _broadcastFilteredData(outputChannel map[string]map[string]chan shared.Inpu
 				select {
 				case <-shared.Ctx.Done():
 					return // Exit if the context is cancelled
-				case logLine := <-shared.InputChannel[target]:
+				case logLine := <-shared.FilterChannel[target]:
 					for outputType, channels := range outputChannel {
 						if ch, exists := channels[target]; exists {
 							ch <- logLine
@@ -108,6 +109,8 @@ func _broadcastFilteredData(outputChannel map[string]map[string]chan shared.Inpu
 						}
 					}
 					shared.OffsetChannel <- logLine // send to offset channel after broadcasting
+					shared.Output_count.Add(1)      // Update the output count
+					shared.AddLatency(time.Duration(time.Now().UnixNano() - logLine.ReceivedAt))
 				default:
 					// No data to broadcast, continue
 				}

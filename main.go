@@ -19,6 +19,7 @@ func offsetInitialization() {
 	_, err := offset.GetOffsetMap()
 	if err != nil {
 		fmt.Printf("Error getting offset map: %v\n", err)
+		shared.Error_count.Add(1)
 		return
 	}
 	fmt.Printf("Offset map initialized with %d entries.\n", len(shared.OffsetMap))
@@ -34,6 +35,7 @@ func main() {
 	config, err := confmanager.ReadConfig("config.yml")
 	if err != nil {
 		fmt.Printf("Error reading configuration: %v\n", err)
+		shared.Error_count.Add(1)
 		os.Exit(1)
 	}
 	fmt.Printf("Configuration loaded: %+v\n", config)
@@ -92,8 +94,14 @@ func main() {
 		offset.Write()
 	}()
 
-	<-shared.Ctx.Done()         // Wait for the context to be cancelled before proceeding
-	server.Shutdown(shared.Ctx) // Ensure the server is properly shut down
+	shared.Wg.Add(1)
+	go func() {
+		defer shared.Wg.Done()
+		shared.PrintStats(shared.Ctx)
+	}()
 
+	<-shared.Ctx.Done() // Wait for the context to be cancelled before proceeding
+	fmt.Println("Context cancelled, shutting down gracefully...")
+	server.Shutdown(shared.Ctx) // Ensure the server is properly shut down
 	shared.Wg.Wait()
 }
