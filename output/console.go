@@ -26,6 +26,7 @@ func (c ConsoleOutput) Out(ctx context.Context, outputChannel map[string]chan sh
 	duration, err := time.ParseDuration(c.FLUSH_INTERVAL)
 	if err != nil {
 		fmt.Printf("Error parsing FLUSH_INTERVAL %s: %v\n", c.FLUSH_INTERVAL, err)
+		shared.Error_count.Add(1)
 		return
 	}
 	for _, target := range c.Targets {
@@ -53,6 +54,7 @@ func (c ConsoleOutput) Out(ctx context.Context, outputChannel map[string]chan sh
 				for _, logLine := range batch {
 					if err := c._writeToConsole(logLine); err != nil {
 						fmt.Printf("Error writing to console: %v\n", err)
+						shared.Error_count.Add(1) // Increment error count
 					}
 				}
 			}

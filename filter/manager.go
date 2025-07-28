@@ -54,6 +54,7 @@ func _filterLine(ctx context.Context,
 			if filterFunc(lineInputData, mode, funcList) {
 				shared.FilterChannel[name] <- lineInputData
 			}
+			shared.Filter_count.Add(1) // Update the filter count
 		}
 	}
 }

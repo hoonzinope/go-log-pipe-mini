@@ -41,6 +41,7 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 		f.MaxSize = f.MaxSize[:len(f.MaxSize)-2]
 		num, err := strconv.ParseInt(f.MaxSize, 10, 64) // Remove "MB"
 		if err != nil {
+			shared.Error_count.Add(1)
 			return fmt.Errorf("error parsing MaxSize %s: %v", f.MaxSize, err)
 		}
 		maxSize = num * 1024 * 1024 // 100MB
@@ -49,6 +50,7 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 		f.MaxSize = f.MaxSize[:len(f.MaxSize)-2] // Remove "KB"
 		num, err := strconv.ParseInt(f.MaxSize, 10, 64)
 		if err != nil {
+			shared.Error_count.Add(1)
 			return fmt.Errorf("error parsing MaxSize %s: %v", f.MaxSize, err)
 		}
 		maxSize = num * 1024 // Convert to bytes
@@ -57,6 +59,7 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 		f.MaxSize = f.MaxSize[:len(f.MaxSize)-2] // Remove "GB"
 		num, err := strconv.ParseInt(f.MaxSize, 10, 64)
 		if err != nil {
+			shared.Error_count.Add(1)
 			return fmt.Errorf("error parsing MaxSize %s: %v", f.MaxSize, err)
 		}
 		maxSize = num * 1024 * 1024 * 1024 // Convert to bytes
@@ -64,6 +67,7 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 
 	if _, err := os.ReadDir(f.Path); err != nil {
 		if err := os.MkdirAll(f.Path, 0755); err != nil {
+			shared.Error_count.Add(1)
 			return fmt.Errorf("error creating directory %s: %v", f.Path, err)
 		}
 	}
@@ -82,11 +86,14 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 
 	file, err := os.OpenFile(filepath.Join(f.Path, f.Filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
+		shared.Error_count.Add(1)
 		return fmt.Errorf("error opening file %s: %v", f.Path+f.Filename, err)
 	}
 
 	fileInfo, err := file.Stat()
 	if err != nil {
+		shared.Error_count.Add(1)
+		file.Close()
 		return fmt.Errorf("error getting file info for %s: %v", filepath.Join(f.Path, f.Filename), err)
 	}
 	switch f.Rolling {
@@ -96,10 +103,12 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 			file.Close()
 			newFileName := fmt.Sprintf("%s.log.%s", f.Filename, currentTime)
 			if err := os.Rename(filepath.Join(f.Path, f.Filename), filepath.Join(f.Path, newFileName)); err != nil {
+				shared.Error_count.Add(1)
 				return fmt.Errorf("error renaming file: %v", err)
 			}
 			file, err = os.OpenFile(filepath.Join(f.Path, f.Filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
+				shared.Error_count.Add(1)
 				return fmt.Errorf("error opening new file %s: %v", filepath.Join(f.Path, f.Filename), err)
 			}
 		}
@@ -109,10 +118,12 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 			file.Close()
 			newFileName := fmt.Sprintf("%s.log.%s", f.Filename, currentTime)
 			if err := os.Rename(filepath.Join(f.Path, f.Filename), filepath.Join(f.Path, newFileName)); err != nil {
+				shared.Error_count.Add(1)
 				return fmt.Errorf("error renaming file: %v", err)
 			}
 			file, err = os.OpenFile(filepath.Join(f.Path, f.Filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
+				shared.Error_count.Add(1)
 				return fmt.Errorf("error opening new file %s: %v", filepath.Join(f.Path, f.Filename), err)
 			}
 		}
@@ -122,10 +133,12 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 			file.Close()
 			newFileName := fmt.Sprintf("%s.log.%s", f.Filename, currentTime)
 			if err := os.Rename(filepath.Join(f.Path, f.Filename), filepath.Join(f.Path, newFileName)); err != nil {
+				shared.Error_count.Add(1)
 				return fmt.Errorf("error renaming file: %v", err)
 			}
 			file, err = os.OpenFile(filepath.Join(f.Path, f.Filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
+				shared.Error_count.Add(1)
 				return fmt.Errorf("error opening new file %s: %v", filepath.Join(f.Path, f.Filename), err)
 			}
 		}
@@ -133,16 +146,19 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 
 	fileInfo, err = file.Stat()
 	if err != nil {
+		shared.Error_count.Add(1)
 		return fmt.Errorf("error getting file info for %s: %v", filepath.Join(f.Path, f.Filename), err)
 	}
 	if fileInfo.Size() >= maxSize { // 100MB
 		file.Close()
 		newFileName := fmt.Sprintf("%s.log.%d", f.Filename, time.Now().Unix())
 		if err := os.Rename(filepath.Join(f.Path, f.Filename), filepath.Join(f.Path, newFileName)); err != nil {
+			shared.Error_count.Add(1)
 			return fmt.Errorf("error renaming file: %v", err)
 		}
 		file, err = os.OpenFile(filepath.Join(f.Path, f.Filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
+			shared.Error_count.Add(1)
 			return fmt.Errorf("error opening new file %s: %v", filepath.Join(f.Path, f.Filename), err)
 		}
 	}
@@ -150,15 +166,18 @@ func (f FileOutput) _writeToFile(logLine shared.InputData) error {
 	if logLine.Json != nil {
 		if _, err := file.WriteString(fmt.Sprintf("%s %s: %v\n", logLine.Tag, logLine.FileName, logLine.Json)); err != nil {
 			file.Close()
+			shared.Error_count.Add(1)
 			return fmt.Errorf("error writing JSON to file %s: %v", filepath.Join(f.Path, f.Filename), err)
 		}
 	} else if logLine.Raw != "" {
 		if _, err := file.WriteString(fmt.Sprintf("%s %s: %s\n", logLine.Tag, logLine.FileName, logLine.Raw)); err != nil {
 			file.Close()
+			shared.Error_count.Add(1)
 			return fmt.Errorf("error writing raw log to file %s: %v", filepath.Join(f.Path, f.Filename), err)
 		}
 	}
 	if err := file.Close(); err != nil {
+		shared.Error_count.Add(1)
 		return fmt.Errorf("error closing file %s: %v", filepath.Join(f.Path, f.Filename), err)
 	}
 	if debug {
@@ -186,6 +205,7 @@ func (f FileOutput) Out(ctx context.Context, outputChannel map[string]chan share
 
 	duration, err := time.ParseDuration(f.FLUSH_INTERVAL)
 	if err != nil {
+		shared.Error_count.Add(1)
 		fmt.Printf("Error parsing FLUSH_INTERVAL %s: %v\n", f.FLUSH_INTERVAL, err)
 		return
 	}
@@ -213,6 +233,7 @@ func (f FileOutput) Out(ctx context.Context, outputChannel map[string]chan share
 				for _, logLine := range batch {
 					if err := f._writeToFile(logLine); err != nil {
 						fmt.Printf("Error writing to file: %v\n", err)
+						shared.Error_count.Add(1) // Increment error count
 					}
 				}
 				batch = nil // Clear the batch for the next iteration

@@ -75,6 +75,7 @@ func _watch(ctx context.Context,
 				filepattern, files, inputChan, name, parser)
 			if err != nil {
 				fmt.Printf("Error watching files: %v\n", err)
+				shared.Error_count.Add(1)
 				return
 			}
 		}
@@ -90,6 +91,7 @@ func _watchFiles(filepattern string,
 
 	newFiles, err := filepath.Glob(filepattern)
 	if err != nil {
+		shared.Error_count.Add(1)
 		return nil, fmt.Errorf("error watching files: %v", err)
 	}
 	// new file go routine

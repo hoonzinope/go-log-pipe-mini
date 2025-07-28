@@ -17,9 +17,10 @@ var OffsetMap = make(map[string]int64)
 var Wg sync.WaitGroup
 
 type InputData struct {
-	Raw      string
-	Json     map[string]interface{}
-	FileName string
-	Tag      string
-	Offset   int64
+	Raw        string
+	Json       map[string]interface{}
+	FileName   string
+	Tag        string
+	Offset     int64
+	ReceivedAt int64
 }

@@ -32,6 +32,7 @@ func (h HttpOutput) Out(ctx context.Context, outputChannel map[string]chan share
 	duration, err := time.ParseDuration(h.FLUSH_INTERVAL)
 	if err != nil {
 		fmt.Printf("Error parsing FLUSH_INTERVAL %s: %v\n", h.FLUSH_INTERVAL, err)
+		shared.Error_count.Add(1)
 		return
 	}
 
@@ -41,11 +42,13 @@ func (h HttpOutput) Out(ctx context.Context, outputChannel map[string]chan share
 	timeout, err := time.ParseDuration(h.Timeout)
 	if err != nil {
 		fmt.Printf("Error parsing timeout %s: %v\n", h.Timeout, err)
+		shared.Error_count.Add(1)
 		return
 	}
 
 	if err := h._waitForEndpointReady(timeout); err != nil {
 		fmt.Printf("Error waiting for endpoint to be ready: %v\n", err)
+		shared.Error_count.Add(1)
 		return
 	}
 
@@ -74,6 +77,7 @@ func (h HttpOutput) Out(ctx context.Context, outputChannel map[string]chan share
 					fmt.Printf("Sending HTTP POST to %s for target %s\n", h.Url, logLine.Tag)
 					if err := h._writeToHttp(logLine, timeout); err != nil {
 						fmt.Printf("Error writing to HTTP: %v\n", err)
+						shared.Error_count.Add(1) // Increment error count
 					}
 				}
 				batch = nil // Clear the batch for the next iteration
@@ -87,18 +91,21 @@ func (h HttpOutput) _waitForEndpointReady(timeout time.Duration) error {
 	// TODO: Implement health check logic to wait for the HTTP endpoint to be ready
 	req, err := http.NewRequest("HEAD", h.Url, nil)
 	if err != nil {
-		return fmt.Errorf("Error creating HTTP request: %v", err)
+		shared.Error_count.Add(1)
+		return fmt.Errorf("error creating HTTP request: %v", err)
 	}
 	client := &http.Client{
 		Timeout: timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error sending HTTP request: %v", err)
+		shared.Error_count.Add(1)
+		return fmt.Errorf("error sending HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("HTTP endpoint not ready, status: %s", resp.Status)
+		shared.Error_count.Add(1)
+		return fmt.Errorf("http endpoint not ready, status: %s", resp.Status)
 	}
 	return nil
 }
@@ -109,7 +116,8 @@ func (h HttpOutput) _writeToHttp(logLine shared.InputData, timeout time.Duration
 	// Example implementation (replace with actual logic)
 	jsonData, err := json.Marshal(logLine)
 	if err != nil {
-		return fmt.Errorf("Error marshaling logLine to JSON: %v", err)
+		shared.Error_count.Add(1)
+		return fmt.Errorf("error marshaling logLine to JSON: %v", err)
 	}
 
 	// Send the JSON data to the HTTP endpoint
@@ -119,12 +127,14 @@ func (h HttpOutput) _writeToHttp(logLine shared.InputData, timeout time.Duration
 	}
 	resp, err := client.Post(h.Url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return fmt.Errorf("Error sending HTTP POST request: %v", err)
+		shared.Error_count.Add(1)
+		return fmt.Errorf("error sending HTTP POST request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP request failed with status: %s", resp.Status)
+		shared.Error_count.Add(1)
+		return fmt.Errorf("http request failed with status: %s", resp.Status)
 	}
 	fmt.Printf("HTTP POST successful for target %s: %s\n", logLine.Tag, logLine.FileName)
 	return nil
