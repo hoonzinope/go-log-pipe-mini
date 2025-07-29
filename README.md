@@ -1,3 +1,6 @@
+[![en](https://img.shields.io/badge/lang-en-red.svg)](README.en.md)
+[![ko](https://img.shields.io/badge/lang-ko-blue.svg)](README.md)
+
 # go-log-pipe-mini
 
 ## 개요
