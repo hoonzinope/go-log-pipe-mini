@@ -45,11 +45,23 @@ func (h HttpOutput) Out(ctx context.Context, outputChannel map[string]chan share
 		shared.Error_count.Add(1)
 		return
 	}
-
-	if err := h._waitForEndpointReady(timeout); err != nil {
-		fmt.Printf("Error waiting for endpoint to be ready: %v\n", err)
-		shared.Error_count.Add(1)
-		return
+CHECKHEALTH:
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("Context cancelled, stopping HTTP output goroutine")
+			return
+		default:
+			if err := h._waitForEndpointReady(timeout); err != nil {
+				fmt.Printf("Error waiting for endpoint to be ready: %v\n", err)
+				shared.Error_count.Add(1)
+				time.Sleep(5 * time.Second) // Wait before retrying
+				continue                    // Retry waiting for the endpoint
+			} else {
+				fmt.Printf("HTTP endpoint %s is ready\n", h.Url)
+				break CHECKHEALTH // Exit the loop if the endpoint is ready
+			}
+		}
 	}
 
 	for _, target := range h.Targets {
