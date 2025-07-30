@@ -122,6 +122,8 @@ OUTPUTS:
 
 ## Usage
 
+### Local Execution
+
 1.  **Clone the repository**:
     ```bash
     git clone https://github.com/your-username/go-log-pipe-mini.git
@@ -140,6 +142,10 @@ OUTPUTS:
     ```bash
     go run main.go
     ```
+    Alternatively, you can use the `makefile`:
+    ```bash
+    make run
+    ```
 
 5.  **Check status (optional)**:
     While the application is running, you can check its status at the following endpoints:
@@ -148,3 +154,52 @@ OUTPUTS:
 
 6.  **Generate test logs (optional)**:
     The `generate` package supports creating test logs. You can enable the `generate.GenLogWithFolder` and `generate.GenerateJsonLog` goroutines in `main.go` to test the pipeline.
+
+### Running with Docker
+
+1.  **Build the Docker image**:
+    ```bash
+    docker build -t go-log-pipe-mini .
+    ```
+
+2.  **Run the Docker container**:
+    ```bash
+    docker run -v $(pwd)/config.yml:/app/config.yml go-log-pipe-mini
+    ```
+    * The `-v` option mounts the local `config.yml` file to `/app/config.yml` inside the container.
+
+### Debug Mode
+
+Enabling debug mode automatically generates test logs and activates the `/logs` endpoint, which allows you to send logs via HTTP POST requests. This is useful for testing and verifying your pipeline configuration.
+
+-   **Using Makefile**:
+    ```bash
+    make debug-run
+    ```
+-   **Manual Execution**:
+    ```bash
+    go run main.go -debug=true
+    ```
+
+## Makefile Commands
+
+-   `make build`: Builds the application.
+-   `make run`: Runs the application.
+-   `make test`: Runs the tests.
+-   `make clean`: Removes the build artifacts.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Contributing
+
+Contributions to this project are welcome! Please follow these steps:
+
+1.  Fork this repository.
+2.  Create a new branch for your feature or bug fix. (`git checkout -b feature/your-feature`)
+3.  Make your changes and commit them. (`git commit -m 'Add some feature'`)
+4.  Push to your forked repository. (`git push origin feature/your-feature`)
+5.  Create a Pull Request.
+
+Bug reports and feature suggestions are always welcome! Please create an issue.
