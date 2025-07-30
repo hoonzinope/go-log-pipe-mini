@@ -164,9 +164,11 @@ OUTPUTS:
 
 2.  **Run the Docker container**:
     ```bash
-    docker run -v $(pwd)/config.yml:/app/config.yml go-log-pipe-mini
+    docker run -v $(pwd)/config.yml:/app/config.yml -e PORT=8080 go-log-pipe-mini
     ```
     * The `-v` option mounts the local `config.yml` file to `/app/config.yml` inside the container.
+    * You can set the port using the `-e PORT=8080` option if needed.
+    * When setting the PATH in the `config.yml` file, make sure to use the mounted path.
 
 ### Debug Mode
 

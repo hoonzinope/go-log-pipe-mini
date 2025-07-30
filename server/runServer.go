@@ -24,7 +24,7 @@ func Run(debug bool) {
 		handleLogRequests(mux)
 	}
 	endpoint_metrics(mux)
-	fmt.Println("Starting log server on :8080")
+	fmt.Println("Starting log server on port =>", port)
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Println("Error starting log server:", err)
 		return

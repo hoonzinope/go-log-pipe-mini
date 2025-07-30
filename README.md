@@ -167,9 +167,11 @@ OUTPUTS:
 
 2.  **Docker 컨테이너 실행**:
     ```bash
-    docker run -v $(pwd)/config.yml:/app/config.yml go-log-pipe-mini
+    docker run -v $(pwd)/config.yml:/app/config.yml -e PORT=8080 go-log-pipe-mini
     ```
     * `-v` 옵션을 사용하여 로컬의 `config.yml` 파일을 컨테이너 내부의 `/app/config.yml` 경로로 마운트합니다.
+    * `-e PORT=8080` 옵션을 사용하여 컨테이너의 포트를 설정할 수 있습니다. 기본값은 8080입니다.
+    * `config.yml` 파일의 PATH 설정시 볼륨 마운트가 적용된 경로를 사용해야 합니다.
 
 ### 디버그 모드
 
