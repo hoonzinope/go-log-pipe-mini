@@ -4,20 +4,27 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 )
 
 var httpServer *http.Server
 
-func Run() {
+func Run(debug bool) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default port if not set
+	}
 	httpServer = &http.Server{
-		Addr: ":8080",
+		Addr: ":" + port,
 	}
 	httpServer.Handler = http.NewServeMux()
 	mux := httpServer.Handler.(*http.ServeMux)
 	healthCheck(mux)
-	handleLogRequests(mux)
+	if debug {
+		handleLogRequests(mux)
+	}
 	endpoint_metrics(mux)
-	fmt.Println("Starting log server on :8080")
+	fmt.Println("Starting log server on port =>", port)
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Println("Error starting log server:", err)
 		return

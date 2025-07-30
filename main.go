@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,6 +16,8 @@ import (
 	"test_gluent_mini/shared"
 )
 
+var debug = false
+
 func offsetInitialization() {
 	_, err := offset.GetOffsetMap()
 	if err != nil {
@@ -27,6 +30,12 @@ func offsetInitialization() {
 
 func main() {
 	fmt.Println("Starting the Gluent Mini application...")
+	debug := flag.Bool("debug", false, "Enable debug mode")
+	flag.Parse()
+	if *debug {
+		fmt.Println("Debug mode is enabled")
+	}
+
 	offsetInitialization() // Initialize offsets from the offset file
 	inputChannel := shared.InputChannel
 	filterChannel := shared.FilterChannel
@@ -54,17 +63,19 @@ func main() {
 		fmt.Println("Cleanup complete. Exiting.")
 	}()
 	// Start the generate process for test data generation
-	shared.Wg.Add(1)
-	go func() {
-		defer shared.Wg.Done()
-		generate.GenLogWithFolder()
-		generate.GenerateJsonLog()
-	}()
+	if *debug {
+		shared.Wg.Add(1)
+		go func() {
+			defer shared.Wg.Done()
+			generate.GenLogWithFolder()
+			generate.GenerateJsonLog()
+		}()
+	}
 	// Start the server to handle incoming requests for test data
 	shared.Wg.Add(1)
 	go func() {
 		defer shared.Wg.Done()
-		server.Run()
+		server.Run(*debug)
 	}()
 
 	input.Configure(config)

@@ -1,0 +1,33 @@
+INPUTS:
+  - NAME: syslog
+    TYPE: file
+    PATH: ./logs/
+    PARSER: text
+  - NAME: applog
+    TYPE: file
+    PATH: ./json_logs/
+    PARSER: json
+
+FILTERS:
+  syslog:
+    MODE: OR
+    RULES:
+      - TYPE: grep
+        OPTIONS:
+          IGNORE_CASE: true
+          PATTERN: "error"
+  applog:
+    MODE: AND
+    RULES:
+      - TYPE: json_grep
+        OPTIONS:
+          FIELD: "level"
+          IGNORE_CASE: true
+          PATTERN: "error"
+
+OUTPUTS:
+  - TYPE: stdout
+    TARGETS: [syslog, applog]
+    OPTIONS:
+      BATCH_SIZE: 5
+      FLUSH_INTERVAL: 2s
